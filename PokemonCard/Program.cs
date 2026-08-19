@@ -1,9 +1,18 @@
+using Microsoft. EntityFrameworkCore;
+using PokemonCard. Models;
+
 var builder = WebApplication. CreateBuilder(args);
 
 // Add services to the container.
 builder. Services. AddControllersWithViews( );
 
 var app = builder. Build( );
+
+builder. Services. AddDbContext<PicartchuContext>(
+    options => options. UseSqlServer(
+        builder. Configuration. GetConnectionString("PicartchuConnection")
+    )
+);
 
 // Configure the HTTP request pipeline.
 if(!app. Environment. IsDevelopment( ))
