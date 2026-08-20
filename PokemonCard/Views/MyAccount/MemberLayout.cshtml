@@ -26,7 +26,7 @@
 
             <!-- Logo -->
             <a class="navbar-brand" href="#">
-                PokemonCard
+                Picartchu
             </a>
 
             <!-- 搜尋欄 -->
@@ -69,7 +69,7 @@
             <!-- 左側選單 -->
             <aside class="col-lg-3">
 
-                <partial name="MemberMenu" />
+                <partial name="seller" />
 
             </aside>
 
@@ -86,7 +86,104 @@
         </div>
 
     </div>
+    <div class="modal fade" id="filterModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
 
+                <div class="modal-header">
+                    <h5 class="modal-title">商品篩選</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- 價格 -->
+                    <div class="row align-items-center mb-3">
+                        <div class="col-3">
+                            <label class="fs-5">價格：</label>
+                        </div>
+
+                        <div class="col-9">
+                            <div class="d-flex gap-2">
+                                <input type="number" class="form-control" placeholder="最小值" min="0" oninput="this.value = Math.max(0, this.value)">
+                                <span class="d-flex align-items-center">-</span>
+                                <input type="number" class="form-control" placeholder="最大值" min="0" oninput="this.value = Math.max(0, this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- 分類 -->
+                    <div class="row align-items-center mb-3">
+                        <div class="col-3">
+                            <label class="fs-5">分類：</label>
+                        </div>
+
+                        <div class="col-9">
+
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary dropdown-toggle"
+                                        type="button"
+                                        data-bs-toggle="dropdown">
+                                    商品分類
+                                </button>
+
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">3C商品</a></li>
+                                    <li><a class="dropdown-item" href="#">服飾</a></li>
+                                    <li><a class="dropdown-item" href="#">食品</a></li>
+                                    <li><a class="dropdown-item" href="#">生活用品</a></li>
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+                    <!-- 地區 -->
+                    <div class="row align-items-center mb-3">
+                        <div class="col-3">
+                            <label class="fs-5">地區：</label>
+                        </div>
+
+                        <div class="col-9">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary">台北</button>
+                                <button class="btn btn-outline-primary">台中</button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- 顏色 -->
+                    <div class="row align-items-center mb-3">
+                        <div class="col-3">
+                            <label class="fs-5">顏色：</label>
+                        </div>
+
+                        <div class="col-9">
+                            <button class="btn btn-outline-primary">
+                                顏色選擇
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">
+                        取消
+                    </button>
+
+                    <button class="btn btn-primary">
+                        套用篩選
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
