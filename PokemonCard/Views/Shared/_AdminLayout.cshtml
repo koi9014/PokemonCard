@@ -1,5 +1,242 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
-}
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - 日本限定寶可夢代購管理後台</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Test_Identity.styles.css" asp-append-version="true" />
+    <style>
+
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                background-color: #f8f9fa;
+            }
+
+            .navbar-custom {
+                background-color: #212529;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .app-shell {
+                min-height: calc(100vh - 56px);
+                display: flex;
+            }
+
+           
+            .sidebar {
+                width: 280px;
+                background-color: #343a40;
+                flex-shrink: 0;
+                position: sticky;
+                top: 56px;
+                height: calc(100vh - 56px);
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+            }
+
+                
+                .sidebar .nav {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding-bottom: 2rem;
+                }
+
+                .sidebar .nav-link {
+                    color: rgba(255, 255, 255, 0.75);
+                    font-size: 0.95rem;
+                    padding: 0.85rem 1.25rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    border-radius: 0;
+                    transition: all 0.2s ease-in-out;
+                }
+
+                    .sidebar .nav-link:hover {
+                        color: #ffffff;
+                        background-color: rgba(255, 255, 255, 0.08);
+                    }
+
+                    .sidebar .nav-link.active {
+                        color: #ffffff;
+                        background-color: #0d6efd;
+                        font-weight: 600;
+                    }
+
+                    .sidebar .nav-link i {
+                        font-size: 1.1rem;
+                        width: 20px;
+                        text-align: center;
+                    }
+
+            .content-area {
+                flex-grow: 1;
+                min-width: 0;
+                padding: 2rem;
+            }
+
+            /* RWD 響應式微調 */
+            @@media (max-width: 991.98px) {
+                .app-shell {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    width: 100%;
+                    position: static;
+                    height: auto;
+                    overflow-y: visible;
+                }
+
+                    .sidebar .nav {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                        gap: 0;
+                        padding-bottom: 0;
+                    }
+
+                .content-area {
+                    padding: 1.25rem;
+                }
+            }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-controller="Home" asp-action="AdminIndex">
+                <i class="bi bi-lightning-charge-fill text-warning"></i>
+                日本限定寶可夢代購 - 管理員後台
+            </a>
+
+            <div class="d-flex align-items-center gap-3 text-light">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-circle fs-5"></i>
+                    <span class="fw-medium">@(User.Identity?.Name ?? "Super Admin")</span>
+                </span>
+                <span class="opacity-50">|</span>
+                <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm" class="d-inline">
+                    <button type="submit" id="btnLogout" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>登出</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-shell d-flex">
+        <aside class="sidebar py-2">
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="AdminIndex" class="nav-link" data-route="Home/AdminIndex">
+                        <i class="bi bi-graph-up"></i>
+                        <span>管理員後台首頁 / 儀表板</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="SellerAudit" class="nav-link" data-route="Home/SellerAudit">
+                        <i class="bi bi-person-check"></i>
+                        <span>賣家信用 / 資格審核</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="RolePermissions" class="nav-link" data-route="Home/RolePermissions">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>角色權限管理</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="Map" class="nav-link" data-route="Home/Map">
+
+                        <i class="bi bi-currency-exchange"></i>
+                        <span>視覺化地圖熱力分析</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="Banwords" class="nav-link" data-route="Home/Banwords">
+                        <i class="bi bi-sliders"></i>
+                        <span>違禁字庫系統參數設定</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#flagged-products" class="nav-link">
+                        <i class="bi bi-tag"></i>
+                        <span>糾紛與異常訂單列表</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="DisputeConsole" class="nav-link" data-route="Home/DisputeConsole">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>糾紛處理中心</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#financial-reports" class="nav-link">
+                        <i class="bi bi-receipt"></i>
+                        <span>平台財務專屬對帳報表頁</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Home" asp-action="FeatureControlPanel" class="nav-link" data-route="Home/FeatureControlPanel">
+
+                        <i class="bi bi-grid-3x3-gap"></i>
+                        <span>平台後台功能模組設定頁面</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="content-area" role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+            const currentRoute = '@(ViewContext.RouteData.Values["controller"])/@(ViewContext.RouteData.Values["action"])';
+            const activeLink = document.querySelector('.sidebar .nav-link[data-route="' + currentRoute + '"]');
+
+            if (activeLink) {
+                activeLink.classList.add('active');
+                activeLink.setAttribute('aria-current', 'page');
+            }
+
+            document.querySelectorAll('.sidebar .nav-link[href^="#"]').forEach(link => {
+                link.addEventListener('click', function () {
+                    document.querySelectorAll('.sidebar .nav-link').forEach(item => {
+                        item.classList.remove('active');
+                        item.removeAttribute('aria-current');
+                    });
+                    this.classList.add('active');
+                    this.setAttribute('aria-current', 'page');
+                });
+            });
+
+            document.getElementById('logoutForm')?.addEventListener('submit', function (event) {
+                const confirmLogout = confirm('確定要登出管理系統嗎？');
+
+                if (!confirmLogout) {
+                    event.preventDefault();
+                    return;
+                }
+
+                localStorage.removeItem('adminToken');
+                sessionStorage.clear();
+            });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
