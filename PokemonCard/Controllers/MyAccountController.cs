@@ -15,9 +15,11 @@ namespace PokemonCard. Controllers
 
             var product = _context. Products. FirstOrDefault( );
             var StoreName = _context. Sellers. FirstOrDefault( );
+            var image = _context. ProductImages. FirstOrDefault( );
 
             ViewBag. Product = product;
             ViewBag. StoreName = StoreName;
+            ViewBag. image = image;
 
 
             return View();
