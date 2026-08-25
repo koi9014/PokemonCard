@@ -64,5 +64,5 @@ public partial class Product
 
     public virtual ICollection<ProductSpec> ProductSpecs { get; set; } = new List<ProductSpec>();
 
-    public virtual Seller User { get; set; } = null!;
+    public virtual Seller Seller { get; set; } = null!;
 }

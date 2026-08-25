@@ -475,7 +475,7 @@ public partial class PicartchuContext : DbContext
                 .HasComment("賣家編號")
                 .HasColumnName("User_ID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Products)
+            entity.HasOne(d => d. Seller).WithMany(p => p.Products)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Product_User_ID_FK");

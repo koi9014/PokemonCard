@@ -1,4 +1,8 @@
-﻿@{
+﻿@model PokemonCard.Models.Product
+
+
+
+@{
     ViewData["Title"] = "商品詳細資訊";
 }
 
@@ -197,6 +201,56 @@
                 background-color: #42A5F5;
             }
 
+    /* ==========================
+       商品規格
+    ========================== */
+
+    .product-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+
+    .product-option {
+        min-width: 140px;
+        padding: 12px 16px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: #fff;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+
+        .product-option:hover {
+            border-color: #ffc107;
+            background: #fffaf0;
+        }
+
+
+        .product-option.active {
+            border: 2px solid #ffc107;
+            background: #fff8e1;
+            color: #212529;
+        }
+
+
+        .product-option .option-name {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+
+        .product-option .option-price {
+            display: block;
+            color: #dc3545;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
 </style>
 
 
@@ -223,41 +277,26 @@
                  data-bs-touch="true"
                  data-bs-interval="false">
 
-                <!-- 圖片 -->
                 <div class="carousel-inner">
 
-                    <div class="carousel-item active">
+                    @{
+                        int imageIndex = 0;
+                    }
 
-                        <img src="https://images.pokemontcg.io/base1/58.png"
-                             alt="皮卡丘商品圖片">
+                    @foreach(var image in Model.ProductImages.OrderBy(x => x.ImageOrder))
+                    {
+                        <div class="carousel-item @(imageIndex == 0 ? "active" : "")">
 
-                    </div>
+                            <img src="@image.ImageUrl"
+                                 alt="@Model.ProductName 商品圖片 @(imageIndex + 1)">
 
-                    <div class="carousel-item">
+                        </div>
 
-                        <img src="https://images.pokemontcg.io/base1/4.png"
-                             alt="商品圖片 2">
-
-                    </div>
-
-                    <div class="carousel-item">
-
-                        <img src="https://images.pokemontcg.io/jungle/51.png"
-                             alt="商品圖片 3">
-
-                    </div>
-
-                    <div class="carousel-item">
-
-                        <img src="https://images.pokemontcg.io/jungle/54.png"
-                             alt="商品圖片 4">
-
-                    </div>
+                        imageIndex++;
+                    }
 
                 </div>
 
-
-                <!-- 左箭頭 -->
 
                 <button class="carousel-control-prev"
                         type="button"
@@ -268,8 +307,6 @@
 
                 </button>
 
-
-                <!-- 右箭頭 -->
 
                 <button class="carousel-control-next"
                         type="button"
@@ -287,28 +324,18 @@
 
             <div class="product-indicators">
 
-                <button type="button"
-                        data-bs-target="#productCarousel"
-                        data-bs-slide-to="0"
-                        class="active">
-                </button>
-
-                <button type="button"
-                        data-bs-target="#productCarousel"
-                        data-bs-slide-to="1">
-                </button>
-
-                <button type="button"
-                        data-bs-target="#productCarousel"
-                        data-bs-slide-to="2">
-                </button>
-
-                <button type="button"
-                        data-bs-target="#productCarousel"
-                        data-bs-slide-to="3">
-                </button>
+                @for(int i = 0; i < Model.ProductImages.Count; i++)
+                {
+                    <button type="button"
+                            data-bs-target="#productCarousel"
+                            data-bs-slide-to="@i"
+                            class="@(i == 0 ? "active" : "")"
+                            aria-label="商品圖片 @(i + 1)">
+                    </button>
+                }
 
             </div>
+
 
 
 
@@ -328,7 +355,7 @@
             <div class="mb-3">
 
                 <span class="badge bg-info text-dark px-3 py-2">
-                    寶可夢卡牌
+                    @Model.ProductType
                 </span>
 
             </div>
@@ -338,7 +365,7 @@
 
             <h1 class="product-title mb-3">
 
-                皮卡丘 Pokémon Card
+                @Model.ProductName
 
             </h1>
 
@@ -347,13 +374,37 @@
 
             <p class="product-short-description mb-4">
 
-                日本寶可夢官方卡牌，
-                適合收藏與喜愛皮卡丘的玩家。
-                商品由日本當地賣家購入。
+                @Model.Description
 
             </p>
 
+            <!-- ==========================
+     商品規格
+========================== -->
 
+            <div class="mb-4">
+
+
+                @foreach(var item in Model.ProductSpecs)
+                {
+                    <button type="button"
+                            class="product-option @(item == Model.ProductSpecs.FirstOrDefault( ) ? "active" : "")"
+                            data-price="@item.SpecsPrice"
+                            data-stock="@item.Stock"
+                            data-option="收藏版">
+
+                        <span class="option-name">
+                            @item.SpecsCategory1
+                        </span>
+
+                        <span class="option-price">
+                            NT$ @item.SpecsPrice
+                        </span>
+
+                    </button>
+                }
+               
+            </div>
             <!-- 價格 -->
 
             <div class="product-info-box mb-4">
@@ -362,13 +413,14 @@
                     售價
                 </div>
 
-                <div class="product-price">
+                <div class="product-price" id="productPrice">
 
-                    NT$ 580
+                    NT$ @Model.ProductSpecs.FirstOrDefault( )?.SpecsPrice
 
                 </div>
 
             </div>
+
 
 
             <!-- 數量 -->
@@ -385,28 +437,26 @@
                     <button class="btn btn-outline-secondary"
                             type="button"
                             onclick="decreaseQuantity()">
-
                         −
-
                     </button>
 
-
                     <input id="quantity"
-                           type="text"
-                           class="form-control"
+                           name="quantity"
+                           type="number"
+                           class="form-control text-center"
                            value="1"
+                           min="1"
+                           max="1"
                            readonly>
-
 
                     <button class="btn btn-outline-secondary"
                             type="button"
                             onclick="increaseQuantity()">
-
                         ＋
-
                     </button>
 
                 </div>
+
 
             </div>
 
@@ -454,19 +504,6 @@
                 <div class="col-6 mb-3">
 
                     <strong>
-                        商品編號
-                    </strong>
-
-                    <br>
-
-                    PC001
-
-                </div>
-
-
-                <div class="col-6 mb-3">
-
-                    <strong>
                         商品狀態
                     </strong>
 
@@ -477,20 +514,7 @@
                 </div>
 
 
-                <div class="col-6">
-
-                    <strong>
-                        商品所在地
-                    </strong>
-
-                    <br>
-
-                    日本
-
-                </div>
-
-
-                <div class="col-6">
+                <div class="col-6 mb-3">
 
                     <strong>
                         估計配送
@@ -501,6 +525,9 @@
                     7 - 14 天
 
                 </div>
+
+
+                
 
             </div>
 
@@ -524,7 +551,7 @@
 
             <div class="col-auto">
 
-                <img src="https://i.pravatar.cc/150?img=12"
+                <img src="@Model.Seller.User.Avatar"
                      class="seller-avatar"
                      alt="賣家頭像">
 
@@ -537,7 +564,7 @@
 
                 <div class="seller-name">
 
-                    PikachuShop
+                    @Model.Seller.StoreName
 
                 </div>
 
@@ -555,7 +582,7 @@
 
                 <div class="text-muted small">
 
-                    日本寶可夢商品專門賣家
+                    @Model.Seller.StoreDescription
 
                 </div>
 
@@ -638,108 +665,6 @@
 
     </div>
 
-
-
-    <!-- =====================================
-         商品規格
-    ====================================== -->
-
-    <div class="mt-5">
-
-
-        <h3 class="fw-bold mb-3">
-
-            商品資訊
-
-        </h3>
-
-
-        <div class="table-responsive">
-
-            <table class="table table-bordered spec-table">
-
-
-                <tbody>
-
-
-                    <tr>
-
-                        <th>
-                            商品類型
-                        </th>
-
-                        <td>
-                            寶可夢卡牌
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            品牌
-                        </th>
-
-                        <td>
-                            Pokémon
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            商品狀態
-                        </th>
-
-                        <td>
-                            全新
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            商品來源
-                        </th>
-
-                        <td>
-                            日本
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            商品編號
-                        </th>
-
-                        <td>
-                            PC001
-                        </td>
-
-                    </tr>
-
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-
-</div>
-
-
-
 <!-- =====================================
      商品圖片放大 Modal
 ====================================== -->
@@ -786,7 +711,7 @@
     </div>
 
 </div>
-
+</div>
 
 
 <!-- =====================================
@@ -854,5 +779,153 @@
             });
 
         });
+            const productCarousel =
+            document.getElementById("productCarousel");
+
+        const productIndicators =
+            document.querySelectorAll(
+                ".product-indicators button"
+            );
+
+
+        productCarousel.addEventListener(
+            "slid.bs.carousel",
+            function(event) {
+
+                // 移除所有 active
+                productIndicators.forEach(function(button) {
+
+                    button.classList.remove("active");
+
+                });
+
+
+                // 設定目前圖片的 indicator
+                if (productIndicators[event.to]) {
+
+                    productIndicators[event.to]
+                        .classList.add("active");
+
+                }
+
+            }
+        );
+
 
 </script>
+
+<script>
+
+    // ==========================
+    // 商品規格 / 價格切換
+    // ==========================
+
+    document
+        .querySelectorAll(".product-option")
+        .forEach(function(option) {
+
+            option.addEventListener("click", function() {
+
+                // 移除其他規格的 active
+                document
+                    .querySelectorAll(".product-option")
+                    .forEach(function(item) {
+
+                        item.classList.remove("active");
+
+                    });
+
+
+                // 設定目前規格
+                this.classList.add("active");
+
+
+                // 取得價格
+                const price =
+                    parseInt(this.dataset.price);
+
+
+                // 更新價格
+                document.getElementById("productPrice")
+                    .textContent =
+                    "NT$ " + price.toLocaleString();
+
+            });
+
+        });
+
+</script>
+
+<script>
+    function increaseQuantity() {
+        const input = document.getElementById("quantity");
+
+        let quantity = parseInt(input.value) || 1;
+        const max = parseInt(input.max);
+
+        if (quantity < max) {
+            input.value = quantity + 1;
+        }
+    }
+
+    function decreaseQuantity() {
+        const input = document.getElementById("quantity");
+
+        let quantity = parseInt(input.value) || 1;
+        const min = parseInt(input.min);
+
+        if (quantity > min) {
+            input.value = quantity - 1;
+        }
+    }
+        // 選擇規格
+    document.querySelectorAll(".product-option").forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            document.querySelectorAll(".product-option")
+                .forEach(function (btn) {
+                    btn.classList.remove("active");
+                });
+
+            this.classList.add("active");
+
+            const stock = parseInt(this.dataset.stock) || 0;
+
+            const quantity = document.getElementById("quantity");
+
+            quantity.max = stock;
+            quantity.value = stock > 0 ? 1 : 0;
+        });
+    });
+
+
+    // 增加數量
+    function increaseQuantity() {
+
+        const input = document.getElementById("quantity");
+
+        const current = parseInt(input.value) || 1;
+        const max = parseInt(input.max) || 1;
+
+        if (current < max) {
+            input.value = current + 1;
+        }
+    }
+
+
+    // 減少數量
+    function decreaseQuantity() {
+
+        const input = document.getElementById("quantity");
+
+        const current = parseInt(input.value) || 1;
+        const min = parseInt(input.min) || 1;
+
+        if (current > min) {
+            input.value = current - 1;
+        }
+    }
+
+</script>
+
