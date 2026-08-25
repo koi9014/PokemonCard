@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// ===== [違禁字庫管理新增] 註冊違禁字比對服務，供後台與未來前台審查流程共用 =====
+builder.Services.AddScoped<BannedWordReviewService>();
 
 // ===== [管理員登入系統新增開始] 註冊管理員 Cookie 登入設定 =====
 // AdminCookie 僅供管理員後台使用，之後一般會員登入可再新增獨立 Cookie，避免權限混用。
@@ -40,6 +42,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
 
 // ===== [管理員登入系統新增開始] 啟用登入 Cookie 讀取 =====
 // UseAuthentication 必須放在 UseAuthorization 前，系統才會先還原登入身分再判斷授權。
