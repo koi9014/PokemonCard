@@ -125,7 +125,9 @@
                     <span class="fw-medium">@(User.Identity?.Name ?? "Super Admin")</span>
                 </span>
                 <span class="opacity-50">|</span>
-                <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm" class="d-inline">
+                @* ===== [管理員登入系統修改] 登出改走 AdminLoginController.Logout，清除 AdminCookie ===== *@
+                <form asp-controller="AdminLogin" asp-action="Logout" method="post" id="logoutForm" class="d-inline">
+                    @Html.AntiForgeryToken()
                     <button type="submit" id="btnLogout" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>登出</span>
@@ -206,36 +208,36 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-            const currentRoute = '@(ViewContext.RouteData.Values["controller"])/@(ViewContext.RouteData.Values["action"])';
-            const activeLink = document.querySelector('.sidebar .nav-link[data-route="' + currentRoute + '"]');
+        const currentRoute = '@(ViewContext.RouteData.Values["controller"])/@(ViewContext.RouteData.Values["action"])';
+        const activeLink = document.querySelector('.sidebar .nav-link[data-route="' + currentRoute + '"]');
 
-            if (activeLink) {
-                activeLink.classList.add('active');
-                activeLink.setAttribute('aria-current', 'page');
-            }
+        if (activeLink) {
+        activeLink.classList.add('active');
+        activeLink.setAttribute('aria-current', 'page');
+        }
 
-            document.querySelectorAll('.sidebar .nav-link[href^="#"]').forEach(link => {
-                link.addEventListener('click', function () {
-                    document.querySelectorAll('.sidebar .nav-link').forEach(item => {
-                        item.classList.remove('active');
-                        item.removeAttribute('aria-current');
-                    });
-                    this.classList.add('active');
-                    this.setAttribute('aria-current', 'page');
-                });
-            });
+        document.querySelectorAll('.sidebar .nav-link[href^="#"]').forEach(link => {
+        link.addEventListener('click', function () {
+        document.querySelectorAll('.sidebar .nav-link').forEach(item => {
+        item.classList.remove('active');
+        item.removeAttribute('aria-current');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-current', 'page');
+        });
+        });
 
-            document.getElementById('logoutForm')?.addEventListener('submit', function (event) {
-                const confirmLogout = confirm('確定要登出管理系統嗎？');
+        document.getElementById('logoutForm')?.addEventListener('submit', function (event) {
+        const confirmLogout = confirm('確定要登出管理系統嗎？');
 
-                if (!confirmLogout) {
-                    event.preventDefault();
-                    return;
-                }
+        if (!confirmLogout) {
+        event.preventDefault();
+        return;
+        }
 
-                localStorage.removeItem('adminToken');
-                sessionStorage.clear();
-            });
+        localStorage.removeItem('adminToken');
+        sessionStorage.clear();
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
