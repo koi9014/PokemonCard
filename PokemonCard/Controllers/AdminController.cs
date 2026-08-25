@@ -27,6 +27,42 @@ namespace PokemonCard.Controllers
             return View();
         }
 
+        public async Task<IActionResult> SellerAudit(string? keyword, string status = "all")
+        {
+            var query = _context.SellerApplications
+                .Include(application => application.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var keywordText = keyword.Trim();
+                query = query.Where(application =>
+                    application.RealName.Contains(keywordText) ||
+                    application.User.Email.Contains(keywordText) ||
+                    (application.User.Username != null && application.User.Username.Contains(keywordText)) ||
+                    (application.User.DisplayName != null && application.User.DisplayName.Contains(keywordText)));
+            }
+
+            if (!string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(application => application.SellerStatus == status);
+            }
+
+            ViewBag.Keyword = keyword ?? string.Empty;
+            ViewBag.Status = status;
+            ViewBag.AllCount = await _context.SellerApplications.CountAsync();
+            ViewBag.PendingCount = await _context.SellerApplications.CountAsync(application => application.SellerStatus == "PENDING");
+            ViewBag.RejectedCount = await _context.SellerApplications.CountAsync(application => application.SellerStatus == "REJECTED");
+            ViewBag.ApprovedCount = await _context.SellerApplications.CountAsync(application => application.SellerStatus == "APPROVED");
+
+            var applications = await query
+                .OrderBy(application => application.SellerStatus == "PENDING" ? 0 : application.SellerStatus == "REJECTED" ? 1 : 2)
+                .ThenByDescending(application => application.ApplyAt)
+                .ToListAsync();
+
+            return View(applications);
+        }
+
         // ===== [違禁字庫管理新增開始] 違禁字列表與搜尋 =====
         public async Task<IActionResult> BannedWords(string? keyword, string status = "all")
         {

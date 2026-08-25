@@ -1,0 +1,424 @@
+﻿@model List<SellerApplication>
+
+@{
+    ViewData["Title"] = "賣家資格 / 信用審核列表";
+    Layout = "_AdminLayout";
+
+    var keyword = ViewBag.Keyword as string ?? string.Empty;
+    var status = ViewBag.Status as string ?? "all";
+    var allCount = Convert.ToInt32(ViewBag.AllCount ?? 0);
+    var pendingCount = Convert.ToInt32(ViewBag.PendingCount ?? 0);
+    var rejectedCount = Convert.ToInt32(ViewBag.RejectedCount ?? 0);
+    var approvedCount = Convert.ToInt32(ViewBag.ApprovedCount ?? 0);
+}
+
+@functions {
+    private static string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "PENDING" => "待審核",
+            "REJECTED" => "需補件",
+            "APPROVED" => "已通過",
+            _ => status
+        };
+    }
+
+    private static string GetStatusDotClass(string status)
+    {
+        return status switch
+        {
+            "PENDING" => "status-pending",
+            "REJECTED" => "status-need-info",
+            "APPROVED" => "status-approved",
+            _ => "status-muted"
+        };
+    }
+
+    private static string GetActionText(string status)
+    {
+        return status == "APPROVED" ? "檢視明細" : "審核";
+    }
+
+    private static string GetActionClass(string status)
+    {
+        return status == "APPROVED" ? "btn-secondary" : "btn-danger";
+    }
+
+    private static string GetReviewItem(SellerApplication application)
+    {
+        if (!string.IsNullOrWhiteSpace(application.IdcardFront) && !string.IsNullOrWhiteSpace(application.IdcardBack))
+        {
+            return "實名資料 / 撥款資料";
+        }
+
+        return "實名資料待補";
+    }
+
+    private static string GetFileName(string filePath)
+    {
+        var normalizedPath = filePath.Replace('\\', '/');
+        var fileName = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+
+        return string.IsNullOrWhiteSpace(fileName) ? filePath : fileName;
+    }
+}
+
+<style>
+    .seller-audit-page {
+        color: #111827;
+    }
+
+    .seller-audit-title {
+        color: #002b55;
+        font-weight: 800;
+    }
+
+    .audit-filter {
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #e9eff7;
+    }
+
+    .audit-table-card {
+        border: 1px solid #d7dee8;
+        border-radius: 0;
+        background: #ffffff;
+    }
+
+    .audit-table {
+        table-layout: fixed;
+    }
+
+        .audit-table thead th {
+            background: #f1f4f8;
+            color: #002b55;
+            font-size: 0.92rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .audit-table td {
+            height: 62px;
+            vertical-align: middle;
+        }
+
+    .status-dot {
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+        border: 1px solid #111827;
+        border-radius: 50%;
+        margin-right: 0.4rem;
+        vertical-align: -2px;
+    }
+
+    .status-pending {
+        background: #ffe100;
+    }
+
+    .status-need-info {
+        background: #e33145;
+    }
+
+    .status-approved {
+        background: #19d160;
+    }
+
+    .status-muted {
+        background: #94a3b8;
+    }
+
+    .filter-link {
+        color: #0757d6;
+        padding: 0 0.25rem;
+        text-decoration: none;
+    }
+
+        .filter-link.active {
+            color: #111827;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+    .audit-action-btn {
+        min-width: 148px;
+        border: 0;
+        border-radius: 6px;
+        font-weight: 800;
+        padding: 0.65rem 1.5rem;
+    }
+
+    .audit-modal-card {
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        background: #ffffff;
+        min-height: 250px;
+    }
+
+    .audit-modal-card-title {
+        border-bottom: 1px solid #e5eaf1;
+        font-weight: 800;
+        color: #1f2937;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .audit-detail-row {
+        display: grid;
+        grid-template-columns: 112px minmax(0, 1fr);
+        gap: 1rem;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid #edf1f5;
+    }
+
+        .audit-detail-row:last-child {
+            border-bottom: 0;
+        }
+
+    .audit-detail-label {
+        color: #64748b;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .audit-file-list .list-group-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        background: transparent;
+    }
+
+    .modal-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 1.05rem;
+        padding: 0.5rem 0.8rem;
+        vertical-align: middle;
+    }
+
+        .modal-status-badge .status-dot {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.15rem;
+        }
+
+    .audit-file-name {
+        color: #334155;
+        font-weight: 700;
+        word-break: break-word;
+    }
+
+    .audit-note {
+        min-height: 70px;
+        resize: vertical;
+    }
+
+    .modal-xl {
+        --bs-modal-width: 1280px;
+    }
+
+    @@media (max-width: 991.98px) {
+        .audit-table {
+            min-width: 980px;
+        }
+
+        .audit-detail-row {
+            grid-template-columns: 1fr;
+            gap: 0.25rem;
+        }
+    }
+</style>
+
+<div class="seller-audit-page">
+    <h1 class="seller-audit-title h3 mb-4">【賣家資格/信用審核列表】</h1>
+
+    <div class="row g-3 align-items-center mb-3">
+        <div class="col-lg-3">
+            <form asp-controller="Admin" asp-action="SellerAudit" method="get">
+                <input type="hidden" name="status" value="@status" />
+                <input name="keyword" value="@keyword" class="form-control form-control-lg" placeholder="搜尋框：可輸入賣家姓名 / 帳號" />
+            </form>
+        </div>
+        <div class="col-lg-9">
+            <div class="audit-filter px-3 py-2 text-center">
+                <span class="fw-semibold me-2">頁面篩選器：</span>
+                [
+                <a asp-controller="Admin" asp-action="SellerAudit" asp-route-keyword="@keyword" asp-route-status="all" class="filter-link @(status == "all" ? "active" : string.Empty)">全部 @allCount</a>
+                ]
+                [
+                <span class="status-dot status-pending"></span>
+                <a asp-controller="Admin" asp-action="SellerAudit" asp-route-keyword="@keyword" asp-route-status="PENDING" class="filter-link @(status == "PENDING" ? "active" : string.Empty)">待審核 @pendingCount</a>
+                ]
+                [
+                <span class="status-dot status-need-info"></span>
+                <a asp-controller="Admin" asp-action="SellerAudit" asp-route-keyword="@keyword" asp-route-status="REJECTED" class="filter-link @(status == "REJECTED" ? "active" : string.Empty)">需補件 @rejectedCount</a>
+                ]
+                [
+                <span class="status-dot status-approved"></span>
+                <a asp-controller="Admin" asp-action="SellerAudit" asp-route-keyword="@keyword" asp-route-status="APPROVED" class="filter-link @(status == "APPROVED" ? "active" : string.Empty)">已通過 @approvedCount</a>
+                ]
+            </div>
+        </div>
+    </div>
+
+    <div class="audit-table-card">
+        <div class="table-responsive">
+            <table class="table audit-table table-bordered mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-3" style="width: 15%;">賣家 ID</th>
+                        <th style="width: 15%;">姓名</th>
+                        <th style="width: 15%;">申請日期</th>
+                        <th style="width: 19%;">審核項目</th>
+                        <th style="width: 13%;">狀態標籤</th>
+                        <th class="text-center" style="width: 23%;">動作元件</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-5">目前沒有符合條件的賣家申請</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            var modalId = $"auditModal-{item.ApplicationId}";
+                            var sellerName = item.User.DisplayName ?? item.User.Username ?? item.RealName;
+
+                            <tr>
+                                <td class="ps-3">@item.UserId</td>
+                                <td>@sellerName</td>
+                                <td>@item.ApplyAt.ToString("yyyy-MM-dd")</td>
+                                <td>@GetReviewItem(item)</td>
+                                <td>
+                                    <span class="status-dot @GetStatusDotClass(item.SellerStatus)"></span>@GetStatusText(item.SellerStatus)
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn @GetActionClass(item.SellerStatus) audit-action-btn" data-bs-toggle="modal" data-bs-target="#@modalId">
+                                        @GetActionText(item.SellerStatus)
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @foreach (var item in Model)
+    {
+        var modalId = $"auditModal-{item.ApplicationId}";
+        var sellerName = item.User.DisplayName ?? item.User.Username ?? item.RealName;
+
+        <div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@($"{modalId}Label")" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <h2 class="modal-title h4 fw-bold mb-0" id="@($"{modalId}Label")">賣家資料審核 - @sellerName (@item.UserId)</h2>
+                                <span class="badge text-bg-light border modal-status-badge">
+                                    <span class="status-dot @GetStatusDotClass(item.SellerStatus)"></span>@GetStatusText(item.SellerStatus)
+                                </span>
+                            </div>
+                            <div class="text-secondary small mt-1">
+                                申請日期 @item.ApplyAt.ToString("yyyy-MM-dd") · @GetReviewItem(item)
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-4 mb-3">
+                            <div class="col-lg-6">
+                                <section class="audit-modal-card p-4">
+                                    <h3 class="audit-modal-card-title h5">賣家基本資料</h3>
+                                    <div>
+                                        <div class="audit-detail-row">
+                                            <div class="audit-detail-label">賣家 ID</div>
+                                            <div class="fw-semibold">@item.UserId</div>
+                                        </div>
+                                        <div class="audit-detail-row">
+                                            <div class="audit-detail-label">真實姓名</div>
+                                            <div class="fw-semibold">@item.RealName</div>
+                                        </div>
+                                        <div class="audit-detail-row">
+                                            <div class="audit-detail-label">Email</div>
+                                            <div>@item.User.Email</div>
+                                        </div>
+                                        <div class="audit-detail-row">
+                                            <div class="audit-detail-label">聯絡電話</div>
+                                            <div>@item.ContactPhone</div>
+                                        </div>
+                                        <div class="audit-detail-row">
+                                            <div class="audit-detail-label">身分證字號</div>
+                                            <div>@item.IdNumber</div>
+                                        </div>
+                                        <div class="audit-detail-row">
+                                            <div class="audit-detail-label">銀行資料</div>
+                                            <div>@item.BankCode / @item.BankAccount</div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="col-lg-6">
+                                <section class="audit-modal-card p-4">
+                                    <h3 class="audit-modal-card-title h5">文件與圖片</h3>
+                                    <div class="audit-file-list list-group list-group-flush mb-3">
+                                        @if (string.IsNullOrWhiteSpace(item.IdcardFront) && string.IsNullOrWhiteSpace(item.IdcardBack))
+                                        {
+                                            <div class="text-secondary py-3">尚未提供身分證照片</div>
+                                        }
+                                        else
+                                        {
+                                            @if (!string.IsNullOrWhiteSpace(item.IdcardFront))
+                                            {
+                                                <div class="list-group-item">
+                                                    <span>
+                                                        <i class="bi bi-card-image me-2 text-secondary"></i>
+                                                        <span class="audit-file-name">@GetFileName(item.IdcardFront)</span>
+                                                        <span class="text-secondary small ms-2">身分證正面</span>
+                                                    </span>
+                                                    <a href="@item.IdcardFront" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">預覽</a>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(item.IdcardBack))
+                                            {
+                                                <div class="list-group-item">
+                                                    <span>
+                                                        <i class="bi bi-card-image me-2 text-secondary"></i>
+                                                        <span class="audit-file-name">@GetFileName(item.IdcardBack)</span>
+                                                        <span class="text-secondary small ms-2">身分證反面</span>
+                                                    </span>
+                                                    <a href="@item.IdcardBack" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">預覽</a>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                    <div class="alert alert-light border mb-0 py-2 small text-secondary">
+                                        點擊預覽可在新分頁確認圖片或文件細節。
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+
+                        <label for="@($"{modalId}Note")" class="form-label text-secondary fw-semibold">審核備註 / 退回理由</label>
+                        <textarea id="@($"{modalId}Note")" class="form-control audit-note mb-4" placeholder="若點擊「退回補件」，請在此輸入退回原因（例如：證件圖片模糊，請補傳清晰版本...）"></textarea>
+
+                        <div class="d-flex flex-column flex-md-row justify-content-center gap-4">
+                            <button type="button" class="btn btn-danger audit-action-btn" data-bs-dismiss="modal">退回補件</button>
+                            <button type="button" class="btn btn-success audit-action-btn" data-bs-dismiss="modal">通過審核</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
