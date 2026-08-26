@@ -18,6 +18,7 @@
 
         <!-- 表單 -->
         <form class="px-6 py-4 flex flex-col gap-5" method="post" action="/UserLogin/Register">
+            @Html.AntiForgeryToken()
 
             <!-- 本名 -->
             <div class="flex flex-col gap-2">
@@ -94,6 +95,13 @@
                 <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
                 註冊會員
             </button>
+            <!-- 註冊失敗彈窗 -->
+@if (TempData["RegisterFailed"] != null && (bool)TempData["RegisterFailed"])
+{
+    <script>
+        alert("註冊失敗，請重新註冊");
+    </script>
+}
         </form>
 
         <!-- 已有帳號 -->

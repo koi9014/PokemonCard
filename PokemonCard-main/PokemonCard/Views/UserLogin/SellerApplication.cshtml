@@ -16,6 +16,14 @@
         </div>
 
         <form class="px-6 py-4 flex flex-col gap-5" method="post" enctype="multipart/form-data" action="/UserLogin/SellerApplication">
+            @Html.AntiForgeryToken()
+
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="px-4 py-3 rounded-lg bg-[#EF5350]/10 border border-[#EF5350]/40 text-[#EF5350] text-sm font-bold">
+                    @ViewBag.ErrorMessage
+                </div>
+            }
 
             <!-- 真實姓名 -->
             <div class="flex flex-col gap-2">
@@ -37,22 +45,35 @@
                 </label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">call</span>
-                    <input id="phone" name="phone" type="tel" required pattern="[0-9\-]{9,12}"
+                    <input id="contactPhone" name="contactPhone" type="tel" required pattern="[0-9\-]{9,12}"
                         class="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
                         placeholder="0912-345-678">
                 </div>
             </div>
 
-            <!-- 賣場名稱 -->
+            <!-- 身分證字號 -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-bold text-[#0d1e25]" for="shopName">
-                    賣場名稱 <span class="text-[#EF5350]">*</span>
+                <label class="text-sm font-bold text-[#0d1e25]" for="idNumber">
+                    身分證字號 <span class="text-[#EF5350]">*</span>
                 </label>
                 <div class="relative">
-                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">storefront</span>
-                    <input id="shopName" name="shopName" type="text" required
-                        class="w-full pl-12 pr-4 py-3 rounded-lg bg-[#f4faff] border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
-                        placeholder="您的賣場名稱">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">badge</span>
+                    <input id="idNumber" name="idNumber" type="text" required maxlength="20"
+                        class="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
+                        placeholder="A123456789">
+                </div>
+            </div>
+
+            <!-- 銀行代碼 -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-[#0d1e25]" for="bankCode">
+                    銀行代碼 <span class="text-[#EF5350]">*</span>
+                </label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">account_balance</span>
+                    <input id="bankCode" name="bankCode" type="text" required maxlength="10"
+                        class="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
+                        placeholder="例如 822（中國信託）">
                 </div>
             </div>
 
@@ -63,9 +84,9 @@
                 </label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">account_balance</span>
-                    <input id="bankAccount" name="bankAccount" type="text" required
-                        class="w-full pl-12 pr-4 py-3 rounded-lg bg-[#f4faff] border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
-                        placeholder="銀行代碼 - 分行 - 帳號">
+                    <input id="bankAccount" name="bankAccount" type="text" required maxlength="30"
+                        class="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
+                        placeholder="您的銀行帳號">
                 </div>
             </div>
 

@@ -35,6 +35,7 @@
 
         <!-- 表單 -->
         <form class="px-6 py-4 flex flex-col gap-5" method="post" action="/UserLogin/Login">
+            @Html.AntiForgeryToken()
 
             <!-- 信箱 -->
             <div class="flex flex-col gap-2">
@@ -68,6 +69,14 @@
                     </button>
                 </div>
             </div>
+
+            <!-- 顯示錯誤訊息 -->
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div style="color: red; font-weight: bold; padding: 10px; border: 1px solid red;">
+                    @ViewBag.ErrorMessage
+                </div>
+            }
 
             <!-- 登入按鈕 -->
             <button type="submit"
