@@ -18,8 +18,9 @@ namespace PokemonCard. Controllers
                 . Include(p => p. ProductImages
                     . OrderBy(x => x. ImageOrder))
                 . Include(p => p. ProductSpecs)
-        . Include(p => p. Seller)
+                        . Include(p => p. Seller)
             . ThenInclude(s => s. User)
+
                 . FirstOrDefaultAsync(p => p. ProductId == id);
 
             return View(data);

@@ -24,5 +24,9 @@ namespace PokemonCard. Controllers
 
             return View();
         }
+        public IActionResult OrderDetail( )
+        {
+            return View( );
+        }
     }
 }
