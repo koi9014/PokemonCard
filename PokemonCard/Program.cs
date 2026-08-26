@@ -10,9 +10,15 @@ builder.Services.AddControllersWithViews();
 // ===== [違禁字庫管理新增] 註冊違禁字比對服務，供後台與未來前台審查流程共用 =====
 builder.Services.AddScoped<BannedWordReviewService>();
 
-// ===== [管理員登入系統新增開始] 註冊管理員 Cookie 登入設定 =====
-// AdminCookie 僅供管理員後台使用，之後一般會員登入可再新增獨立 Cookie，避免權限混用。
-builder.Services.AddAuthentication()
+// ===== [登入驗證系統整合開始] 一般會員使用預設 Cookie，管理員使用 AdminCookie =====
+// CookieAuthenticationDefaults.AuthenticationScheme 是一般會員預設登入方案。
+// AdminCookie 僅供管理員後台使用，避免管理員與一般會員登入狀態混用。
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.LoginPath = "/UserLogin/Login";
+        options.AccessDeniedPath = "/UserLogin/Login";
+    })
     .AddCookie("AdminCookie", options =>
     {
         options.LoginPath = "/AdminLogin";
@@ -22,7 +28,7 @@ builder.Services.AddAuthentication()
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
-// ===== [管理員登入系統新增結束] =====
+// ===== [登入系統新增結束] =====
 
 builder.Services.AddDbContext<PicartchuContext>(
     options => options.UseSqlServer(
@@ -55,7 +61,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=AdminLogin}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 
