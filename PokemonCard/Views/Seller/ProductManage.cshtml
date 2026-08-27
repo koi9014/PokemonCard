@@ -1,0 +1,207 @@
+@model PokemonCard.Controllers.ProductManageViewModel
+@{
+    Layout = null;
+    var startItem = Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var endItem = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
+    string PageUrl(int page) => Url.Action("ProductManage", new { productType = Model.ProductType, status = Model.Status, search = Model.Search, page }) ?? "#";
+}
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>商品管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#BE2626',
+                        panel: '#F3F9FE',
+                        line: '#D8E4ED',
+                        tablehead: '#DDF1FC'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-[#F3F9FE] font-sans text-[#26323D]">
+    <main class="mx-auto max-w-[1440px] px-8 py-7">
+        <section class="mx-auto max-w-[1320px]">
+            <div class="mb-5 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="@Url.Action("SellerHomepage", "Seller")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
+                    <h1 class="text-2xl font-bold">商品管理</h1>
+                </div>
+                <a href="@Url.Action("AddProduct", "Seller")" class="rounded-md bg-brand px-6 py-3 font-bold text-white shadow-sm">＋ 新增商品</a>
+            </div>
+
+            @if (TempData["SuccessMessage"] is string successMessage)
+            {
+                <div id="notice" class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-700">@successMessage</div>
+            }
+            @if (TempData["ErrorMessage"] is string errorMessage)
+            {
+                <div id="notice" class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-700">@errorMessage</div>
+            }
+
+            <div class="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+                <form id="filter-form" method="get" action="@Url.Action("ProductManage", "Seller")" class="flex flex-wrap items-center gap-5 border-b border-line px-7 py-5">
+                    <label class="flex items-center gap-3 text-sm font-semibold">
+                        分類:
+                        <select name="productType" class="h-9 rounded border border-[#AAB9C6] bg-white px-3 font-normal" onchange="this.form.submit()">
+                            <option value="" selected="@(string.IsNullOrWhiteSpace(Model.ProductType))">全部</option>
+                            @foreach (var type in new[] { "絨毛娃娃", "模型與公仔", "集換式卡牌", "生活與家居", "服飾與配件", "文具與辦公用品", "電玩周邊", "3C配件", "其他" })
+                            {
+                                <option value="@type" selected="@(Model.ProductType == type)">@type</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="flex items-center gap-3 text-sm font-semibold">
+                        狀態:
+                        <select name="status" class="h-9 rounded border border-[#AAB9C6] bg-white px-3 font-normal" onchange="this.form.submit()">
+                            <option value="" selected="@(string.IsNullOrWhiteSpace(Model.Status))">全部</option>
+                            <option value="PUBLISHED" selected="@(Model.Status == "PUBLISHED")">上架中</option>
+                            <option value="DRAFT" selected="@(Model.Status == "DRAFT")">已下架</option>
+                        </select>
+                    </label>
+                    <div class="flex items-center">
+                        <input name="search" value="@Model.Search" class="h-9 w-72 rounded-l border border-[#D7BFC1] bg-[#F8FBFD] px-4 text-sm outline-none" placeholder="搜尋商品名稱或關鍵字..." />
+                        <button type="submit" class="h-9 rounded-r border border-brand bg-brand px-4 text-sm font-semibold text-white">搜尋</button>
+                    </div>
+                    <input type="hidden" name="page" value="1" />
+                    <div class="ml-auto flex gap-3">
+                        <button type="button" id="publish-selected" class="rounded border border-[#AAB9C6] px-4 py-2 text-sm text-[#687783]">批量上架</button>
+                        <button type="button" id="draft-selected" class="rounded border border-[#AAB9C6] px-4 py-2 text-sm text-[#687783]">批量下架</button>
+                        <button type="button" id="delete-selected" class="rounded border border-[#EFAAAA] px-4 py-2 text-sm text-brand">刪除</button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[1000px] text-left text-sm">
+                        <thead class="bg-tablehead text-[#4E5B65]">
+                            <tr>
+                                <th class="w-12 px-6 py-4"><input id="select-all" type="checkbox" class="h-4 w-4" /></th>
+                                <th class="w-24 px-4 py-4">圖片</th>
+                                <th class="px-4 py-4">商品名稱</th>
+                                <th class="px-4 py-4">販售形式</th>
+                                <th class="px-4 py-4">價格</th>
+                                <th class="px-4 py-4">庫存</th>
+                                <th class="px-4 py-4">銷量</th>
+                                <th class="px-4 py-4">狀態</th>
+                                <th class="px-6 py-4">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @if (Model.Items.Count == 0)
+                            {
+                                <tr><td colspan="9" class="px-6 py-16 text-center text-[#71808B]">目前沒有符合條件的商品</td></tr>
+                            }
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr class="bg-white">
+                                    <td class="px-6 py-4"><input class="product-check h-4 w-4" type="checkbox" value="@item.ProductId" /></td>
+                                    <td class="px-4 py-3">
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" class="h-14 w-14 rounded border border-line object-cover" alt="@item.ProductName" />
+                                        }
+                                        else
+                                        {
+                                            <div class="flex h-14 w-14 items-center justify-center rounded border border-line bg-[#F7FAFC] text-xs text-[#9AA8B2]">無圖片</div>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-4 font-semibold">@item.ProductName</td>
+                                    <td class="px-4 py-4">@(item.PreSale ? "預購" : "現貨")</td>
+                                    <td class="px-4 py-4 font-bold">NT$ @item.Price</td>
+                                    <td class="px-4 py-4">@item.Stock</td>
+                                    <td class="px-4 py-4">@item.Sales</td>
+                                    <td class="px-4 py-4">
+                                        @if (item.ProductStatus == "PUBLISHED")
+                                        {
+                                            <span class="font-semibold text-green-600">@(item.IsScheduled ? "排定上架" : "上架中")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="font-semibold text-[#9B5E63]">已下架</span>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <a href="@Url.Action("AddProduct", "Seller", new { id = item.ProductId })" class="font-semibold text-[#147AB2]">✎ 編輯</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between px-7 py-5 text-sm text-[#6E7B85]">
+                    <span>顯示 @startItem 至 @endItem 筆，共 @Model.TotalCount 筆</span>
+                    <nav class="flex items-center gap-3" aria-label="分頁">
+                        @if (Model.Page > 1)
+                        {
+                            <a class="rounded px-2 py-1 hover:bg-panel" href="@PageUrl(Model.Page - 1)">‹ 上一頁</a>
+                        }
+                        else
+                        {
+                            <span class="rounded px-2 py-1 text-[#BCC5CC]">‹ 上一頁</span>
+                        }
+                        <span>第 @Model.Page 頁 / 共 @Model.TotalPages 頁</span>
+                        @if (Model.Page < Model.TotalPages)
+                        {
+                            <a class="rounded px-2 py-1 hover:bg-panel" href="@PageUrl(Model.Page + 1)">下一頁 ›</a>
+                        }
+                        else
+                        {
+                            <span class="rounded px-2 py-1 text-[#BCC5CC]">下一頁 ›</span>
+                        }
+                    </nav>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <form id="status-form" method="post" action="@Url.Action("UpdateProductStatus", "Seller")">
+        @Html.AntiForgeryToken()
+        <input id="status-value" type="hidden" name="status" />
+    </form>
+    <form id="delete-form" method="post" action="@Url.Action("DeleteSelectedProducts", "Seller")">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <script>
+        const selectAll = document.getElementById('select-all');
+        const checkedIds = () => [...document.querySelectorAll('.product-check:checked')].map(box => box.value);
+        const addIds = (form, ids) => {
+            form.querySelectorAll('input[name="productIds"]').forEach(input => input.remove());
+            ids.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden'; input.name = 'productIds'; input.value = id;
+                form.appendChild(input);
+            });
+        };
+
+        selectAll?.addEventListener('change', () => document.querySelectorAll('.product-check').forEach(box => box.checked = selectAll.checked));
+        document.getElementById('publish-selected').addEventListener('click', () => updateStatus('PUBLISHED', '確定要上架所選商品嗎？'));
+        document.getElementById('draft-selected').addEventListener('click', () => updateStatus('DRAFT', '確定要下架所選商品嗎？'));
+        document.getElementById('delete-selected').addEventListener('click', () => {
+            const ids = checkedIds();
+            if (!ids.length) return alert('請先選取商品。');
+            if (!confirm('確定要刪除所選商品嗎？此操作無法復原。')) return;
+            const form = document.getElementById('delete-form'); addIds(form, ids); form.submit();
+        });
+        function updateStatus(status, message) {
+            const ids = checkedIds();
+            if (!ids.length) return alert('請先選取商品。');
+            if (!confirm(message)) return;
+            const form = document.getElementById('status-form');
+            document.getElementById('status-value').value = status;
+            addIds(form, ids); form.submit();
+        }
+        setTimeout(() => document.getElementById('notice')?.remove(), 4000);
+    </script>
+</body>
+</html>

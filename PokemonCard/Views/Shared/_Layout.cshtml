@@ -1,58 +1,66 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PokemonCard</title>
-    @* <script type="importmap"></script> *@
-    @* <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /> *@
-    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
-    @* <link rel="stylesheet" href="~/PokemonCard.styles.css" asp-append-version="true" /> *@
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-        darkMode: "class",
-        theme: {
-        extend: {
-        colors: {
-        "primary": "#EF5350",
-        "on-primary": "#ffffff",
-        "tertiary": "#42A5F5",
-        "success": "#66BB6A",
-        "surface": "#f4faff",
-        "on-surface": "#0d1e25",
-        "on-surface-variant": "#5a413f",
-        "surface-container-lowest": "#ffffff",
-        "outline-variant": "#e2bebb"
-        }
-        }
-        }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<!-- 關鍵修改：html 與 body 加入 h-full，且 body 設定 flex flex-col -->
-<body class="bg-[#f4faff] font-['Inter'] text-[#0d1e25] h-full flex flex-col m-0">
 
-    <!-- 1. 最上方導覽列 (Header) -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#EF5350", "on-primary": "#ffffff",
+                        "secondary": "#26A69A", "tertiary": "#42A5F5",
+                        "on-tertiary": "#ffffff", "success": "#66BB6A",
+                        "error": "#EF5350", "surface": "#f4faff",
+                        "on-surface": "#0d1e25", "on-surface-variant": "#5a413f",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f8fbfd",
+                        "surface-container": "#eef5f9",
+                        "surface-container-high": "#e3edf3",
+                        "outline-variant": "#e2bebb"
+                    }
+                }
+            }
+        };
+    </script>
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-[#f4faff] font-['Inter'] text-[#0d1e25] min-h-screen flex flex-col m-0">
+
+
     <header class="fixed top-0 w-full z-50 shadow-sm bg-white">
         <div class="h-20 w-full px-6 md:px-8 flex items-center justify-between gap-6 bg-white">
             <div class="flex items-center gap-6 flex-1">
+                <a href="~/Home/Index">
                 <div class="flex items-center gap-3">
                     <div class="h-16 w-auto shrink-0 flex items-center justify-center">
-                        <img src="https://lh3.googleusercontent.com/aida/AP1WRLvB4yRXbQnFemYUpXyGvh2B8-idt2nk0ryZ2hNrJGhxPXESr3KsT6j5xMJ_Nq-uAzlgwVlR75iogipJj56D9xweAZ_qDLfO1li7G9VhR_0rl3Yidn-Uh_JbxfjLKXKlVWay84rnVWYRdnVTLabsbB-nke1rWhkP6CElKhluj18oaEWLVwXoAwyMm0b08bzSK3da-SlDI_x7mzsZd06lasms36TaXx4i5PYFCQeaFhbuSbfvLjQIm3eC-Fc" alt="PiCartChu Logo" class="h-16 w-auto object-contain">
+                        <img src="~/img/logo.png" alt="PiCartChu Logo" class="h-16 w-auto object-contain">
                     </div>
                     <span class="font-bold text-[24px] tracking-wide" style="color: #FFDE00;">PiCartChu</span>
                 </div>
+                </a>
 
-                <div class="hidden md:flex relative max-w-md w-full ml-auto md:ml-margin-desktop">
+                <form class="hidden md:flex max-w-md w-full ml-auto md:ml-margin-desktop gap-2" asp-controller="Home" asp-action="Index" method="get">
+                    <div class="relative flex-1">
                     <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-tertiary">search</span>
                     <input class="w-full pl-[52px] pr-5 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-body-lg focus:outline-none focus:border-tertiary focus:ring-2 focus:ring-tertiary/20 transition-all shadow-sm"
                            placeholder="搜尋寶可夢、卡片或周邊..."
-                           type="text">
-                </div>
+                           name="search"
+                           value="@ViewData["Search"]"
+                           type="search">
+                    </div>
+                    <button type="submit" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#42A5F5] text-white shadow-sm transition-all hover:bg-[#0079c1]" aria-label="搜尋">
+                        <span class="material-symbols-outlined">search</span>
+                    </button>
+                </form>
 
             </div>
             <nav class="flex items-center gap-6">
@@ -66,21 +74,36 @@
                     <a class="px-4 py-2 rounded-lg text-sm text-[#42A5F5] font-bold hover:bg-[#42A5F5]/10 transition-all" href="#">登入</a>
                     <a class="px-6 py-2 rounded-lg bg-[#EF5350] text-white text-sm font-bold shadow-sm hover:bg-[#E53935] hover:shadow-md transition-all" href="#">註冊</a>
                     <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center hover:shadow-md transition-all hover:bg-[#E53935]">
+                        <a href="~/MyAccount/MemberCenter">
                         <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
-                        </div>
+                        </a>
+                    </div>
                 </div>
             </nav>
         </div>
     </header>
 
-    <!-- 2. 主頁面內容區塊 (Main) -->
-    <!-- 關鍵修改：加入 flex-1 讓 main 會自動撐開剩餘的高度 -->
-    <div class="container">
-        <main class="w-full pt-28 pb-16 flex-1 max-w-[1280px] mx-auto px-4 md:px-8">
+    @if (IsSectionDefined("SellerSidebar"))
+    {
+        <aside class="w-[280px] shrink-0 bg-white border-r border-[#e2bebb] h-fit sticky top-20 left-0 shadow-md rounded-xl">
+            <nav class="p-6 flex flex-col gap-4">
+                <h3 class="text-xs font-bold uppercase text-[#5a413f]">商品管理</h3>
+                <a class="sidebar-link" href="~/Seller/ProductManage"><span class="material-symbols-outlined">inventory_2</span>商品列表</a>
+                <a class="sidebar-link" href="~/Seller/AddProduct"><span class="material-symbols-outlined">add_box</span>商品上架</a>
+                <h3 class="text-xs font-bold uppercase text-[#5a413f] mt-4">訂單管理</h3>
+                <a class="sidebar-link" href="~/Seller/OrderManage"><span class="material-symbols-outlined">receipt_long</span>賣家訂單</a>
+                <h3 class="text-xs font-bold uppercase text-[#5a413f] mt-4">查看營收</h3>
+                <a class="sidebar-link" href="~/Seller/MyRevenue"><span class="material-symbols-outlined">account_balance_wallet</span>營收明細</a>
+            </nav>
+        </aside>
+    }
+
+    <div class="w-full">
+        <main class="w-full pt-28 pb-16 flex-1 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "max-w-[1600px]" : "max-w-[1280px]") mx-auto px-4 md:px-8">
             @RenderBody()
         </main>
     </div>
-    <!-- 3. 最下方頁尾 (Footer) -->
+
     <footer class="w-full bg-slate-100 py-8 border-t border-[#e2bebb] shrink-0">
         <div class="max-w-[1280px] mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-start gap-8">
             <div class="flex items-center gap-3">
@@ -108,6 +131,8 @@
             © 2026 PiCartChu 日本寶可夢代購. All rights reserved.
         </div>
     </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
 
 </body>
 </html>

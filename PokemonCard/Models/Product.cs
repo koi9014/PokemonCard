@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace PokemonCard.Models;
 
@@ -64,5 +66,9 @@ public partial class Product
 
     public virtual ICollection<ProductSpec> ProductSpecs { get; set; } = new List<ProductSpec>();
 
-    public virtual Seller User { get; set; } = null!;
+    public virtual Seller Seller { get; set; } = null!;
 }
+
+
+
+   
