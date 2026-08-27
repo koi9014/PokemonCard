@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PokemonCard</title>
     @* <script type="importmap"></script> *@
-    @* <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /> *@
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
     @* <link rel="stylesheet" href="~/PokemonCard.styles.css" asp-append-version="true" /> *@
     <!-- Tailwind CSS CDN -->
@@ -47,12 +47,26 @@
                     <span class="font-bold text-[24px] tracking-wide" style="color: #FFDE00;">PiCartChu</span>
                 </div>
 
-                <div class="hidden md:flex relative max-w-md w-full ml-auto md:ml-margin-desktop">
-                    <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-tertiary">search</span>
-                    <input class="w-full pl-[52px] pr-5 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-body-lg focus:outline-none focus:border-tertiary focus:ring-2 focus:ring-tertiary/20 transition-all shadow-sm"
+                <form method="post"
+                      action="/Search/Index"
+                      class="hidden md:flex relative max-w-md w-full ml-auto md:ml-margin-desktop">
+
+                    <input type="text"
+                           name="Keyword"
                            placeholder="搜尋寶可夢、卡片或周邊..."
-                           type="text">
-                </div>
+                           class="w-full pl-5 pr-14 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-body-lg focus:outline-none focus:border-tertiary focus:ring-2 focus:ring-tertiary/20 transition-all shadow-sm">
+
+                    <button type="submit"
+                            class="absolute right-3 top-1/2 -translate-y-1/2
+                        w-9 h-9 flex items-center justify-center
+                        rounded-full text-tertiary hover:bg-surface-container">
+                        <span class="material-symbols-outlined">search</span>
+                    </button>
+
+                </form>
+
+
+
 
             </div>
             <nav class="flex items-center gap-6">
@@ -130,6 +144,7 @@
             © 2026 PiCartChu 日本寶可夢代購. All rights reserved.
         </div>
     </footer>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
