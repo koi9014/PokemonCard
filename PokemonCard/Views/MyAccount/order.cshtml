@@ -1,7 +1,15 @@
-﻿
+﻿@model List<PokemonCard.Models.Order>
+
 
 <!-- 這裡就是右側的商品／訂單資料 -->
-
+@if(!Model.Any( ))
+{
+    <partial name="NoOrder" />
+}
+else
+{
+    <partial name="Order" model="Model" />
+}
 <div class="card mb-4 shadow-sm">
 
     <div class="card-header d-flex justify-content-between">

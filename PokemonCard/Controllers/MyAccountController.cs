@@ -1,5 +1,9 @@
 ﻿using Microsoft. AspNetCore. Mvc;
+using Microsoft. EntityFrameworkCore;
 using PokemonCard. Models;
+using System. Security. Claims;
+using PokemonCard. ViewModels;
+using static Microsoft. Extensions. Logging. EventSource. LoggingEventSource;
 
 namespace PokemonCard. Controllers
 {
@@ -12,21 +16,52 @@ namespace PokemonCard. Controllers
         }
         public IActionResult MemberCenter( )
         {
+            // 取得目前登入者的 UserId
+            var userIdString = User. FindFirstValue(ClaimTypes. NameIdentifier);
 
-            var product = _context. Products. FirstOrDefault( );
-            var StoreName = _context. Sellers. FirstOrDefault( );
-            var image = _context. ProductImages. FirstOrDefault( );
+            // 如果沒有登入，導向登入頁
+            if(string. IsNullOrEmpty(userIdString))
+            {
+                return RedirectToAction("Login", "UserLogin");
+            }
 
-            ViewBag. Product = product;
-            ViewBag. StoreName = StoreName;
-            ViewBag. image = image;
+            int userId = int. Parse(userIdString);
 
+            // 判斷這個 User 有沒有 Seller 資料
+            bool isSeller = _context. Sellers
+                . Any(s => s. UserId == userId);
 
-            return View();
+            // 建立 ViewModel
+            var vm = new MemberCenterViewModel
+            {
+                UserId = userId,
+                IsSeller = isSeller
+            };
+
+            return View(vm);
         }
         public IActionResult OrderDetail( )
         {
-            return View( );
+            var userIdString = User. FindFirstValue(ClaimTypes. NameIdentifier);
+
+
+            if(string. IsNullOrEmpty(userIdString))
+            {
+                return RedirectToAction("Login", "UserLogin");
+            }
+
+            int userId = int. Parse(userIdString);
+
+            var data = _context. Orders
+                . Include(p => p. Buyer)
+                . Include(p => p. Seller)
+                 . Include(p => p. OrderItems)
+                 . Where(p => p. BuyerId == userId)
+                    . ToList( );
+
+            return View(data);
+
+
         }
     }
 }

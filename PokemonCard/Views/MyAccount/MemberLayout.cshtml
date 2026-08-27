@@ -1,6 +1,8 @@
 ﻿@{
     Layout = "_Layout";
 }
+@model PokemonCard.ViewModels.MemberCenterViewModel
+
 
 <!DOCTYPE html>
 <html lang="zh-Hant">
@@ -21,15 +23,22 @@
 <body>
     <main class="member-main">
         <div class="row gx-3 gy-3">
-
             <aside class="col-lg-3">
-                <partial name="seller" />
-            </aside>
 
-            <section class="col-lg-9">
-                <partial name="OrderDetail" />
-                @RenderBody( )
+@if (Model.IsSeller)
+{
+                    <partial name="seller" model="Model" />
+}
+else
+{
+                    <partial name="MemberMenu" model="Model" />
+}
+            </aside>
+                <section class="col-lg-9">
+                    @RenderBody( )
             </section>
+
+   
 
         </div>
     </main>
