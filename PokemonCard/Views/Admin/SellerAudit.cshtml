@@ -37,12 +37,12 @@
 
     private static string GetActionText(string status)
     {
-        return status == "APPROVED" ? "檢視明細" : "審核";
+        return status == "PENDING" ? "審核" : "檢視明細";
     }
 
     private static string GetActionClass(string status)
     {
-        return status == "APPROVED" ? "btn-secondary" : "btn-danger";
+        return status == "PENDING" ? "btn-danger" : "btn-secondary";
     }
 
     private static string GetReviewItem(SellerApplication application)
@@ -90,18 +90,18 @@
         table-layout: fixed;
     }
 
-        .audit-table thead th {
-            background: #f1f4f8;
-            color: #002b55;
-            font-size: 0.92rem;
-            font-weight: 800;
-            white-space: nowrap;
-        }
+    .audit-table thead th {
+        background: #f1f4f8;
+        color: #002b55;
+        font-size: 0.92rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
 
-        .audit-table td {
-            height: 62px;
-            vertical-align: middle;
-        }
+    .audit-table td {
+        height: 62px;
+        vertical-align: middle;
+    }
 
     .status-dot {
         width: 16px;
@@ -135,11 +135,11 @@
         text-decoration: none;
     }
 
-        .filter-link.active {
-            color: #111827;
-            font-weight: 800;
-            text-decoration: none;
-        }
+    .filter-link.active {
+        color: #111827;
+        font-weight: 800;
+        text-decoration: none;
+    }
 
     .audit-action-btn {
         min-width: 148px;
@@ -172,9 +172,9 @@
         border-bottom: 1px solid #edf1f5;
     }
 
-        .audit-detail-row:last-child {
-            border-bottom: 0;
-        }
+    .audit-detail-row:last-child {
+        border-bottom: 0;
+    }
 
     .audit-detail-label {
         color: #64748b;
@@ -200,11 +200,11 @@
         vertical-align: middle;
     }
 
-        .modal-status-badge .status-dot {
-            width: 20px;
-            height: 20px;
-            margin-right: 0.15rem;
-        }
+    .modal-status-badge .status-dot {
+        width: 20px;
+        height: 20px;
+        margin-right: 0.15rem;
+    }
 
     .audit-file-name {
         color: #334155;
@@ -235,6 +235,22 @@
 
 <div class="seller-audit-page">
     <h1 class="seller-audit-title h3 mb-4">【賣家資格/信用審核列表】</h1>
+
+    @if (TempData["SellerAuditMessage"] is string successMessage)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+        </div>
+    }
+
+    @if (TempData["SellerAuditError"] is string errorMessage)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+        </div>
+    }
 
     <div class="row g-3 align-items-center mb-3">
         <div class="col-lg-3">
@@ -409,13 +425,21 @@
                             </div>
                         </div>
 
-                        <label for="@($"{modalId}Note")" class="form-label text-secondary fw-semibold">審核備註 / 退回理由</label>
-                        <textarea id="@($"{modalId}Note")" class="form-control audit-note mb-4" placeholder="若點擊「退回補件」，請在此輸入退回原因（例如：證件圖片模糊，請補傳清晰版本...）"></textarea>
+                        @if (item.SellerStatus == "PENDING")
+                        {
+                            <form asp-controller="Admin" asp-action="RejectSellerApplication" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="applicationId" value="@item.ApplicationId" />
 
-                        <div class="d-flex flex-column flex-md-row justify-content-center gap-4">
-                            <button type="button" class="btn btn-danger audit-action-btn" data-bs-dismiss="modal">退回補件</button>
-                            <button type="button" class="btn btn-success audit-action-btn" data-bs-dismiss="modal">通過審核</button>
-                        </div>
+                                <label for="@($"{modalId}Note")" class="form-label text-secondary fw-semibold">審核備註 / 退回理由</label>
+                                <textarea id="@($"{modalId}Note")" name="auditNote" class="form-control audit-note mb-4" placeholder="若點擊「退回補件」，請在此輸入退回原因（例如：證件圖片模糊，請補傳清晰版本...）"></textarea>
+
+                                <div class="d-flex flex-column flex-md-row justify-content-center gap-4">
+                                    <button type="submit" class="btn btn-danger audit-action-btn">退回補件</button>
+                                    <button type="submit" class="btn btn-success audit-action-btn" formaction="@Url.Action("ApproveSellerApplication", "Admin")">通過審核</button>
+                                </div>
+                            </form>
+                        }
                     </div>
                 </div>
             </div>

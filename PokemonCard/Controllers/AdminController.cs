@@ -24,7 +24,10 @@ namespace PokemonCard.Controllers
 
         public IActionResult AdminCenter()
         {
-            return View();
+            var query = _context.Products
+                .Include(product => product.ProductName)
+                .AsQueryable();
+            return View(query);
         }
 
         public async Task<IActionResult> SellerAudit(string? keyword, string status = "all")
@@ -56,12 +59,96 @@ namespace PokemonCard.Controllers
             ViewBag.ApprovedCount = await _context.SellerApplications.CountAsync(application => application.SellerStatus == "APPROVED");
 
             var applications = await query
-                .OrderBy(application => application.SellerStatus == "PENDING" ? 0 : application.SellerStatus == "REJECTED" ? 1 : 2)
-                .ThenByDescending(application => application.ApplyAt)
-                .ToListAsync();
+               .OrderBy(application => application.SellerStatus == "PENDING" ? 0 : application.SellerStatus == "REJECTED" ? 1 : 2)
+               .ThenByDescending(application => application.ApplyAt)
+               .ToListAsync();
 
             return View(applications);
         }
+
+        // ===== [賣家審核新增開始] 通過賣家申請 =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveSellerApplication(int applicationId, string? auditNote)
+        {
+            var application = await _context.SellerApplications
+                .Include(sellerApplication => sellerApplication.User)
+                .FirstOrDefaultAsync(sellerApplication => sellerApplication.ApplicationId == applicationId);
+
+            if (application == null)
+            {
+                TempData["SellerAuditError"] = "找不到指定的賣家申請";
+                return RedirectToAction(nameof(SellerAudit));
+            }
+
+            if (application.SellerStatus != "PENDING")
+            {
+                TempData["SellerAuditError"] = "此申請已完成審核，請重新整理頁面後再操作";
+                return RedirectToAction(nameof(SellerAudit));
+            }
+
+            application.SellerStatus = "APPROVED";
+            application.User.SellerVerificationStatus = "APPROVED";
+
+            _context.SellerApplicationAudits.Add(new SellerApplicationAudit
+            {
+                ApplicationId = application.ApplicationId,
+                AdminId = GetCurrentAdminId(),
+                AuditStatus = "APPROVED",
+                AuditNote = string.IsNullOrWhiteSpace(auditNote) ? null : auditNote.Trim(),
+                ReviewedAt = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["SellerAuditMessage"] = "賣家申請已通過審核";
+
+            return RedirectToAction(nameof(SellerAudit));
+        }
+        // ===== [賣家審核新增結束] =====
+
+        // ===== [賣家審核新增開始] 退回賣家申請補件 =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectSellerApplication(int applicationId, string? auditNote)
+        {
+            if (string.IsNullOrWhiteSpace(auditNote))
+            {
+                TempData["SellerAuditError"] = "退回補件時必須填寫退回理由";
+                return RedirectToAction(nameof(SellerAudit));
+            }
+
+            var application = await _context.SellerApplications
+                .FirstOrDefaultAsync(sellerApplication => sellerApplication.ApplicationId == applicationId);
+
+            if (application == null)
+            {
+                TempData["SellerAuditError"] = "找不到指定的賣家申請";
+                return RedirectToAction(nameof(SellerAudit));
+            }
+
+            if (application.SellerStatus != "PENDING")
+            {
+                TempData["SellerAuditError"] = "此申請已完成審核，請重新整理頁面後再操作";
+                return RedirectToAction(nameof(SellerAudit));
+            }
+
+            application.SellerStatus = "REJECTED";
+
+            _context.SellerApplicationAudits.Add(new SellerApplicationAudit
+            {
+                ApplicationId = application.ApplicationId,
+                AdminId = GetCurrentAdminId(),
+                AuditStatus = "REJECTED",
+                AuditNote = auditNote.Trim(),
+                ReviewedAt = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["SellerAuditMessage"] = "賣家申請已退回補件";
+
+            return RedirectToAction(nameof(SellerAudit));
+        }
+        // ===== [賣家審核新增結束] =====
 
         // ===== [違禁字庫管理新增開始] 違禁字列表與搜尋 =====
         public async Task<IActionResult> BannedWords(string? keyword, string status = "all")
@@ -229,5 +316,6 @@ namespace PokemonCard.Controllers
 
             throw new InvalidOperationException("無法取得目前登入的管理員編號");
         }
+
     }
 }
