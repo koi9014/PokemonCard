@@ -1,14 +1,11 @@
 @model PokemonCard.Controllers.ProductManageViewModel
 @{
-    Layout = null;
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
     var startItem = Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
     var endItem = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
     string PageUrl(int page) => Url.Action("ProductManage", new { productType = Model.ProductType, status = Model.Status, search = Model.Search, page }) ?? "#";
 }
 
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>商品管理</title>
@@ -27,13 +24,12 @@
             }
         }
     </script>
-</head>
-<body class="min-h-screen bg-[#F3F9FE] font-sans text-[#26323D]">
+<div class="min-h-screen bg-[#F3F9FE] font-sans text-[#26323D]">
     <main class="mx-auto max-w-[1440px] px-8 py-7">
         <section class="mx-auto max-w-[1320px]">
             <div class="mb-5 flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <a href="@Url.Action("SellerHomepage", "Seller")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
+                    <a href="@Url.Action("MemberCenter", "MyAccount")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
                     <h1 class="text-2xl font-bold">商品管理</h1>
                 </div>
                 <a href="@Url.Action("AddProduct", "Seller")" class="rounded-md bg-brand px-6 py-3 font-bold text-white shadow-sm">＋ 新增商品</a>
@@ -203,5 +199,4 @@
         }
         setTimeout(() => document.getElementById('notice')?.remove(), 4000);
     </script>
-</body>
-</html>
+</div>

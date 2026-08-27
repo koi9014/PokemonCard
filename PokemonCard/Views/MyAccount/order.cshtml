@@ -1,11 +1,19 @@
-﻿
+﻿@model List<PokemonCard.Models.Order>
+
 
 <!-- 這裡就是右側的商品／訂單資料 -->
-
+@if(!Model.Any( ))
+{
+    <partial name="NoOrder" />
+}
+else
+{
+    <partial name="Order" model="Model" />
+}
 <div class="card mb-4 shadow-sm">
 
     <div class="card-header d-flex justify-content-between">
-        <span class="fw-bold">XX賣場</span>
+        <p><span class="fw-bold">@ViewBag.StoreName?.StoreName </span></p>
         <span class="text-danger">待付款</span>
     </div>
 
@@ -13,8 +21,7 @@
         <div class="row">
 
             <div class="col-md-3">
-                <img src="~/img/product.png"
-                     class="rounded border"
+                <img src="@ViewBag.image.ImageUrl"
                      width="150"
                      height="150"
                      alt="商品圖片">
@@ -22,7 +29,7 @@
 
             <div class="col-md-9">
 
-                <h5>商品名稱</h5>
+                <h5>@ViewBag.Product?.ProductName</h5>
 
                 <p class="text-muted">
                     規格：黑色 / M

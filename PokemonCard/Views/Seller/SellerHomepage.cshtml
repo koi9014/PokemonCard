@@ -1,6 +1,6 @@
 ﻿@model PokemonCard.Models.SellerDashboardViewModel
 @{
-    Layout ="_Layout";
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
     ViewData["Title"] = "賣家總覽";
 
     var orderStatusMap = new Dictionary<string, string>
@@ -30,9 +30,6 @@
     var chartDataJson = System.Text.Json.JsonSerializer.Serialize(rawChartData);
 }
 
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -81,49 +78,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-</head>
-<body>
+<div class="seller-dashboard">
 
     <main class="w-full min-h-screen bg-transparent z-10 relative">
         <div class="flex flex-col w-full h-full relative bg-transparent">
             <div class="absolute top-0 right-0 w-96 h-96 bg-secondary-container rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 translate-x-1/2 -translate-y-1/2"></div>
-            <div class="flex flex-row w-full max-w-[1440px] mx-auto h-full min-h-[800px] relative my-4">
-
-                <!-- Sidebar -->
-                <aside class="w-[280px] shrink-0 bg-surface-container-lowest border-r border-outline-variant/30 flex flex-col h-full sticky top-4 shadow-md z-10 rounded-xl border" id="sidebar">
-                    <div class="p-margin-desktop flex flex-col gap-margin-desktop">
-                        <div class="flex flex-col gap-gutter">
-                            <div class="flex flex-col gap-unit">
-                                <h3 class="text-label-bold text-on-surface-variant uppercase tracking-wider px-margin-mobile py-unit">商品管理</h3>
-                                <a class="flex items-center gap-unit px-margin-mobile py-2 rounded-r-lg hover:bg-primary-fixed/40 transition-colors text-body-lg text-on-surface hover:text-primary" href="~/Seller/ProductManage">
-                                    <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-                                    <span>商品列表</span>
-                                </a>
-                                <a class="flex items-center gap-unit px-margin-mobile py-2 rounded-r-lg hover:bg-primary-fixed/40 transition-colors text-body-lg text-on-surface hover:text-primary" href="~/Seller/AddProduct">
-                                    <span class="material-symbols-outlined text-[20px]">add_box</span>
-                                    <span>商品上架</span>
-                                </a>
-                            </div>
-                            <div class="flex flex-col gap-unit mt-unit">
-                                <h3 class="text-label-bold text-on-surface-variant uppercase tracking-wider px-margin-mobile py-unit">訂單管理</h3>
-                                <a class="flex items-center gap-unit px-margin-mobile py-2 rounded-r-lg hover:bg-primary-fixed/40 transition-colors text-body-lg text-on-surface hover:text-primary" href="~/Seller/OrderManage">
-                                    <span class="material-symbols-outlined text-[20px]">receipt_long</span>
-                                    <span>賣家訂單</span>
-                                </a>
-                            </div>
-                            <div class="flex flex-col gap-unit mt-unit">
-                                <h3 class="text-label-bold text-on-surface-variant uppercase tracking-wider px-margin-mobile py-unit">查看營收</h3>
-                                <a class="flex items-center gap-unit px-margin-mobile py-2 rounded-r-lg hover:bg-primary-fixed/40 transition-colors text-body-lg text-on-surface hover:text-primary" href="~/Seller/MyRevenue">
-                                    <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-                                    <span>營收明細</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+            <div class="flex flex-col w-full max-w-[1440px] mx-auto h-full min-h-[800px] relative my-4">
+                <div class="flex w-full items-center gap-4 px-margin-mobile pt-margin-desktop md:px-margin-desktop">
+                    <a href="@Url.Action("MemberCenter", "MyAccount")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
+                    <h1 class="text-2xl font-bold">賣家總覽</h1>
+                </div>
+               
 
                 <!-- Main Content -->
-                <main class="flex-1 flex flex-col min-w-0 px-margin-mobile md:px-margin-desktop py-margin-desktop gap-margin-desktop">
+                <main class="flex w-full flex-1 flex-col min-w-0 px-margin-mobile py-margin-desktop md:px-margin-desktop gap-margin-desktop">
                     <div class="bg-surface-container-lowest/90 backdrop-blur-md rounded-2xl shadow-xl border border-outline-variant/30 p-margin-desktop flex flex-col gap-margin-desktop">
 
                         <!-- 查詢區間 Header 表單 -->
@@ -388,5 +356,4 @@
             });
             });
     </script>
-</body>
-</html>
+</div>

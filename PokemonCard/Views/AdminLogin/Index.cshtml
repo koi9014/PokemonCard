@@ -1,0 +1,335 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "管理員登入";
+}
+@model PokemonCard.Models.AdminLoginViewModel
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - 日本限定寶可夢代購管理後台</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+            :root {
+                --admin-navy: #172033;
+                --admin-ink: #253044;
+                --admin-muted: #6f7a8a;
+                --admin-line: #d9dee7;
+                --admin-red: #b83b3b;
+                --admin-gold: #c8a24a;
+                --admin-bg: #f4f6f9;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                min-height: 100vh;
+                margin: 0;
+                font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+                color: var(--admin-ink);
+                background:
+                    linear-gradient(135deg, rgba(23, 32, 51, 0.96), rgba(39, 50, 75, 0.92)),
+                    radial-gradient(circle at top left, rgba(200, 162, 74, 0.18), transparent 32%),
+                    var(--admin-bg);
+            }
+
+            .login-shell {
+                min-height: 100vh;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 460px;
+            }
+
+            .brand-panel {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 56px;
+            }
+
+            .brand-content {
+                max-width: 560px;
+                color: #ffffff;
+            }
+
+            .brand-pikachu {
+                width: 132px;
+                height: 132px;
+                margin-bottom: 28px;
+                object-fit: contain;
+                filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.24));
+            }
+
+            .brand-kicker {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 24px;
+                color: rgba(255, 255, 255, 0.78);
+                font-size: 0.92rem;
+                letter-spacing: 0;
+            }
+
+            .brand-kicker::before {
+                content: "";
+                width: 38px;
+                height: 2px;
+                background: var(--admin-gold);
+                display: inline-block;
+            }
+
+            .brand-title {
+                margin: 0 0 18px;
+                font-size: 2.35rem;
+                line-height: 1.25;
+                font-weight: 700;
+            }
+
+            .brand-copy {
+                max-width: 480px;
+                margin: 0;
+                color: rgba(255, 255, 255, 0.72);
+                line-height: 1.8;
+                font-size: 1rem;
+            }
+
+            .login-panel {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 32px;
+                background: rgba(255, 255, 255, 0.96);
+                border-left: 1px solid rgba(255, 255, 255, 0.3);
+            }
+
+            .login-card {
+                width: 100%;
+                max-width: 360px;
+            }
+
+            .login-mark {
+                width: 48px;
+                height: 48px;
+                margin-bottom: 24px;
+                border: 2px solid #1f2937;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                position: relative;
+                background: linear-gradient(to bottom, #d94343 0 48%, #1f2937 48% 54%, #ffffff 54% 100%);
+                box-shadow: 0 10px 22px rgba(23, 32, 51, 0.12);
+            }
+
+            .login-mark::before,
+            .login-mark::after {
+                content: "";
+                position: absolute;
+            }
+
+            .login-mark::after {
+                width: 16px;
+                height: 16px;
+                left: 14px;
+                top: 14px;
+                border: 2px solid #1f2937;
+                border-radius: 50%;
+                background: #ffffff;
+            }
+
+            .login-mark::before {
+                width: 8px;
+                height: 8px;
+                left: 18px;
+                top: 18px;
+                border-radius: 50%;
+                background: #f8fafc;
+                z-index: 1;
+            }
+
+            .login-heading {
+                margin-bottom: 8px;
+                color: var(--admin-navy);
+                font-size: 1.6rem;
+                font-weight: 700;
+            }
+
+            .login-subtitle {
+                margin-bottom: 28px;
+                color: var(--admin-muted);
+                font-size: 0.95rem;
+                line-height: 1.6;
+            }
+
+            .form-label {
+                color: var(--admin-ink);
+                font-size: 0.92rem;
+                font-weight: 600;
+            }
+
+            .form-control {
+                min-height: 46px;
+                border-color: var(--admin-line);
+                border-radius: 6px;
+                color: var(--admin-ink);
+            }
+
+            .form-control:focus {
+                border-color: var(--admin-gold);
+                box-shadow: 0 0 0 0.2rem rgba(200, 162, 74, 0.16);
+            }
+
+            .form-check-label {
+                color: var(--admin-muted);
+                font-size: 0.92rem;
+            }
+
+            .form-check-input:checked {
+                background-color: var(--admin-navy);
+                border-color: var(--admin-navy);
+            }
+
+            .btn-login {
+                width: 100%;
+                min-height: 46px;
+                border: 0;
+                border-radius: 6px;
+                background: var(--admin-navy);
+                color: #ffffff;
+                font-weight: 700;
+                transition: background-color 0.18s ease, transform 0.18s ease;
+            }
+
+            .btn-login:hover,
+            .btn-login:focus {
+                background: #202d46;
+                color: #ffffff;
+                transform: translateY(-1px);
+            }
+
+            .login-note {
+                margin-top: 22px;
+                padding-top: 18px;
+                border-top: 1px solid var(--admin-line);
+                color: var(--admin-muted);
+                font-size: 0.84rem;
+                line-height: 1.6;
+            }
+
+            .accent-line {
+                width: 100%;
+                height: 3px;
+                margin-bottom: 28px;
+                border-radius: 999px;
+                background: linear-gradient(90deg, var(--admin-red), var(--admin-gold), var(--admin-navy));
+            }
+
+            @@media (max-width: 900px) {
+                .login-shell {
+                    grid-template-columns: 1fr;
+                }
+
+                .brand-panel {
+                    min-height: 34vh;
+                    padding: 40px 28px;
+                }
+
+                .brand-title {
+                    font-size: 1.9rem;
+                }
+
+                .brand-pikachu {
+                    width: 104px;
+                    height: 104px;
+                    margin-bottom: 22px;
+                }
+
+                .login-panel {
+                    min-height: 66vh;
+                    padding: 32px 24px 44px;
+                }
+            }
+
+            @@media (max-width: 520px) {
+                .brand-panel {
+                    align-items: flex-end;
+                }
+
+                .brand-title {
+                    font-size: 1.55rem;
+                }
+
+                .brand-copy {
+                    font-size: 0.92rem;
+                }
+
+                .brand-pikachu {
+                    width: 86px;
+                    height: 86px;
+                }
+            }
+    </style>
+</head>
+<body>
+    <main class="login-shell">
+        <section class="brand-panel" aria-label="管理後台介紹">
+            <div class="brand-content">
+                <img class="brand-pikachu" src="~/images/avatar/pikachu.jpg" alt="皮卡丘品牌圖案" />
+                <div class="brand-kicker">Japan Exclusive Proxy Platform</div>
+                <h1 class="brand-title">日本限定寶可夢代購管理後台</h1>
+                <p class="brand-copy">
+                    管理商品審核、賣家資格、訂單異常與平台營運資料，維持代購流程穩定且可追蹤。
+                </p>
+            </div>
+        </section>
+
+        <section class="login-panel" aria-label="管理員登入">
+            <div class="login-card">
+                <div class="login-mark" aria-hidden="true"></div>
+                <div class="accent-line" aria-hidden="true"></div>
+
+                <h2 class="login-heading">管理員登入</h2>
+                <p class="login-subtitle">請使用資料庫既有管理員帳號登入後台。</p>
+
+                <form asp-controller="AdminLogin" asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label">管理員帳號</label>
+                        <input asp-for="Username" class="form-control" autocomplete="username" required />
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">密碼</label>
+                        <input asp-for="Password" class="form-control" autocomplete="current-password" required />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label">保持登入</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-login">登入管理後台</button>
+                </form>
+
+                <p class="login-note">
+                    管理員帳號由系統資料庫建立，不開放自行註冊。若無法登入，請確認帳號狀態與密碼資料。
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

@@ -1,19 +1,41 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using PokemonCard.Models;
+using System.Security.Claims;
 
 namespace PokemonCard.Controllers;
 
 public class SellerController(PicartchuContext context, IWebHostEnvironment environment, ILogger<SellerController> logger) : Controller
 {
-    private const int SellerId = 3;
+    public override void OnActionExecuting(ActionExecutingContext actionContext)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        ViewData["IsSeller"] = int.TryParse(userIdText, out var userId)
+            && context.Sellers.AsNoTracking().Any(seller => seller.UserId == userId);
+        base.OnActionExecuting(actionContext);
+    }
+
+    private async Task<int?> GetCurrentSellerIdAsync()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdText, out var userId)) return null;
+
+        return await context.Sellers
+            .AsNoTracking()
+            .Where(seller => seller.UserId == userId)
+            .Select(seller => (int?)seller.UserId)
+            .FirstOrDefaultAsync();
+    }
 
     [HttpGet]
     public async Task<IActionResult> SellerHomepage(DateTime? startDate, DateTime? endDate)
     {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
         var today = DateTime.Today;
         var year = today.Year;
-        var orders = context.Orders.Where(order => order.SellerId == SellerId);
+        var orders = context.Orders.Where(order => order.SellerId == sellerId.Value);
 
         if (startDate.HasValue)
             orders = orders.Where(order => order.OrderedAt >= startDate.Value.Date);
@@ -47,7 +69,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             TotalOrders = totalOrders,
             AvgOrderValue = totalOrders == 0 ? 0 : totalSales / totalOrders,
             MonthlyCreditedAmount = await context.MoneyReconciliations
-                .Where(item => item.Order.SellerId == SellerId
+                .Where(item => item.Order.SellerId == sellerId.Value
                     && (item.RemitResult == "撥款成功" || item.RemitResult == "匯款完成")
                     && item.RemitDate.HasValue
                     && item.RemitDate.Value.Year == year
@@ -81,7 +103,9 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     [HttpGet]
     public async Task<IActionResult> ProductManage(string? productType, string? status, string? search, int page = 1)
     {
-        var products = context.Products.AsNoTracking().Where(product => product.UserId == SellerId);
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        var products = context.Products.AsNoTracking().Where(product => product.UserId == sellerId.Value);
         if (!string.IsNullOrWhiteSpace(productType) && productType != "全部") products = products.Where(product => product.ProductType == productType);
         if (status is "PUBLISHED" or "DRAFT") products = products.Where(product => product.ProductStatus == status);
         if (!string.IsNullOrWhiteSpace(search)) products = products.Where(product => EF.Functions.Like(product.ProductName, $"%{search.Trim()}%"));
@@ -117,7 +141,9 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     public async Task<IActionResult> UpdateProductStatus(int[] productIds, string status)
     {
         if (status is not ("PUBLISHED" or "DRAFT") || productIds.Length == 0) return RedirectToAction(nameof(ProductManage));
-        var products = await context.Products.Where(product => product.UserId == SellerId && productIds.Contains(product.ProductId)).ToListAsync();
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        var products = await context.Products.Where(product => product.UserId == sellerId.Value && productIds.Contains(product.ProductId)).ToListAsync();
         foreach (var product in products) { product.ProductStatus = status; product.PublishedAt = status == "PUBLISHED" ? DateTime.Now : null; product.UpdatedAt = DateTime.Now; }
         await context.SaveChangesAsync();
         TempData["SuccessMessage"] = $"已更新 {products.Count} 件商品狀態。";
@@ -128,7 +154,9 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteProduct(int productId)
     {
-        var product = await context.Products.Include(item => item.ProductImages).Include(item => item.ProductSpecs).SingleOrDefaultAsync(item => item.ProductId == productId && item.UserId == SellerId);
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        var product = await context.Products.Include(item => item.ProductImages).Include(item => item.ProductSpecs).SingleOrDefaultAsync(item => item.ProductId == productId && item.UserId == sellerId.Value);
         if (product == null) return NotFound();
         if (await context.OrderItems.AnyAsync(item => item.ProductId == productId)) { TempData["ErrorMessage"] = "已有訂單紀錄的商品不可刪除。"; return RedirectToAction(nameof(ProductManage)); }
         context.ProductImages.RemoveRange(product.ProductImages);
@@ -143,7 +171,9 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteSelectedProducts(int[] productIds)
     {
-        var products = await context.Products.Include(product => product.ProductImages).Include(product => product.ProductSpecs).Where(product => product.UserId == SellerId && productIds.Contains(product.ProductId)).ToListAsync();
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        var products = await context.Products.Include(product => product.ProductImages).Include(product => product.ProductSpecs).Where(product => product.UserId == sellerId.Value && productIds.Contains(product.ProductId)).ToListAsync();
         var deletable = products.Where(product => !context.OrderItems.Any(item => item.ProductId == product.ProductId)).ToList();
         context.ProductImages.RemoveRange(deletable.SelectMany(product => product.ProductImages));
         context.ProductSpecs.RemoveRange(deletable.SelectMany(product => product.ProductSpecs));
@@ -156,8 +186,10 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     [HttpGet]
     public async Task<IActionResult> AddProduct(int? id)
     {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
         if (!id.HasValue) return View(new AddProductInput());
-        var product = await context.Products.Include(item => item.ProductImages).Include(item => item.ProductSpecs).SingleOrDefaultAsync(item => item.ProductId == id && item.UserId == SellerId);
+        var product = await context.Products.Include(item => item.ProductImages).Include(item => item.ProductSpecs).SingleOrDefaultAsync(item => item.ProductId == id && item.UserId == sellerId.Value);
         if (product == null) return NotFound();
         return View(new AddProductInput { ProductId = product.ProductId, ProductName = product.ProductName, Description = product.Description, Location = product.Location, ProductType = product.ProductType, ProductStatus = product.ProductStatus ?? "DRAFT", SaleType = product.ProductSpecs.FirstOrDefault()?.PreSale == true ? "preorder" : "instock", ExistingImages = product.ProductImages.OrderBy(image => image.ImageOrder).Select(image => image.ImageUrl).ToList(), Specs = product.ProductSpecs.Select(spec => new ProductSpecInput { Category = spec.SpecsCategory2 ?? "", Option = spec.SpecsCategory1, Price = spec.SpecsPrice, Stock = spec.Stock }).ToList() });
     }
@@ -182,6 +214,8 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
 
     private async Task<IActionResult> SaveProduct(AddProductInput input, bool isUpdate)
     {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
         var specs = input.Specs;
         ValidateProduct(input, specs);
 
@@ -203,11 +237,11 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 ? await context.Products
                     .Include(item => item.ProductSpecs)
                     .Include(item => item.ProductImages)
-                    .SingleOrDefaultAsync(item => item.ProductId == input.ProductId && item.UserId == SellerId)
+                    .SingleOrDefaultAsync(item => item.ProductId == input.ProductId && item.UserId == sellerId.Value)
                 : null;
             if (isUpdate && product == null) return NotFound();
             var existingPublishedAt = product?.PublishedAt;
-            product ??= new Product { UserId = SellerId, CreatedAt = now };
+            product ??= new Product { UserId = sellerId.Value, CreatedAt = now };
             product.ProductName = input.ProductName.Trim();
             product.Description = input.Description?.Trim();
             product.Location = input.Location;
@@ -336,8 +370,10 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     [HttpGet]
     public async Task<IActionResult> MyRevenue(DateTime? startDate, DateTime? endDate, string status = "全部")
     {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
         var reconciliations = context.MoneyReconciliations
-            .Where(item => item.Order.SellerId == SellerId)
+            .Where(item => item.Order.SellerId == sellerId.Value)
             .AsQueryable();
 
         if (startDate.HasValue)

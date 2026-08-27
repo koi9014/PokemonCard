@@ -1,0 +1,246 @@
+﻿body {
+}
+
+
+/* ==============================
+               商品圖片輪播
+            ============================== */
+
+.product-carousel {
+    background-color: #f4faff;
+    border: 1px solid #e2bebb;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+    .product-carousel .carousel-item {
+        height: 430px;
+    }
+
+    .product-carousel img {
+        width: 100%;
+        height: 430px;
+        object-fit: contain;
+        cursor: pointer;
+    }
+
+/* 輪播左右按鈕 */
+.carousel-control-prev,
+.carousel-control-next {
+    width: 50px;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.55);
+    border-radius: 50%;
+    padding: 22px;
+    background-size: 50%;
+}
+
+/* 輪播指示點 */
+.carousel-indicators {
+    margin-bottom: 20px;
+}
+
+    .carousel-indicators button {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 0;
+        margin: 0 5px;
+    }
+
+
+/* ==============================
+               商品資訊
+            ============================== */
+
+.product-title {
+    font-size: 30px;
+    font-weight: 700;
+    color: #0d1e25;
+}
+
+.product-short-description {
+    color: #5a413f;
+    line-height: 1.8;
+}
+
+.product-price {
+    color: #EF5350;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.product-info-box {
+    border-top: 1px solid #e2bebb;
+    border-bottom: 1px solid #e2bebb;
+    padding: 20px 0;
+}
+
+
+/* ==============================
+               數量按鈕
+            ============================== */
+
+.quantity-box {
+    width: 150px;
+}
+
+    .quantity-box input {
+        text-align: center;
+    }
+
+
+/* ==============================
+               購物車 / 購買按鈕
+            ============================== */
+
+.btn-cart {
+    color: #42A5F5;
+    border: 1px solid #42A5F5;
+    font-weight: 700;
+}
+
+    .btn-cart:hover {
+        background-color: #42A5F5;
+        color: white;
+    }
+
+.btn-buy {
+    background-color: #EF5350;
+    color: white;
+    border: 1px solid #EF5350;
+    font-weight: 700;
+}
+
+    .btn-buy:hover {
+        background-color: #E53935;
+        color: white;
+    }
+
+
+/* ==============================
+               賣家資訊
+            ============================== */
+
+.seller-card {
+    background-color: white;
+    border: 1px solid #e2bebb;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.seller-avatar {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+}
+
+.seller-name {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.rating {
+    color: #f5b301;
+}
+
+
+/* ==============================
+               商品詳細說明
+            ============================== */
+
+.detail-box {
+    background-color: #fff4cc;
+    border-radius: 20px;
+    padding: 30px;
+    line-height: 2;
+    min-height: 180px;
+}
+
+
+/* ==============================
+               商品規格
+            ============================== */
+
+.spec-table th {
+    width: 30%;
+    background-color: #f8f9fa;
+}
+
+.product-indicators {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+    .product-indicators button {
+        width: 10px;
+        height: 10px;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 50%;
+        background-color: #cbd5e1;
+        opacity: 1;
+    }
+
+        .product-indicators button.active {
+            background-color: #42A5F5;
+        }
+
+/* ==========================
+           商品規格
+        ========================== */
+
+.product-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+
+.product-option {
+    min-width: 140px;
+    padding: 12px 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+
+    .product-option:hover {
+        border-color: #ffc107;
+        background: #fffaf0;
+    }
+
+
+    .product-option.active {
+        border: 2px solid #ffc107;
+        background: #fff8e1;
+        color: #212529;
+    }
+
+
+    .product-option .option-name {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+
+    .product-option .option-price {
+        display: block;
+        color: #dc3545;
+        font-size: 14px;
+        font-weight: 600;
+    }

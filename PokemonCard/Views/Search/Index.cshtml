@@ -1,0 +1,85 @@
+﻿@model IEnumerable<PokemonCard.Models.Product>
+
+@{
+    ViewData["Title"] = "搜尋商品";
+}
+
+<div class="container py-4">
+
+    <h1 class="fw-bold mb-4">
+        搜尋商品
+    </h1>
+
+
+    <p class="text-muted">
+        共找到 @Model.Count( ) 件商品
+    </p>
+
+
+    <!-- 商品列表 -->
+    <div class="row g-4">
+
+        @foreach(var product in Model)
+        {
+
+    
+            <div class="col-6 col-md-4 col-lg-3">
+
+                <div class="card h-100 shadow-sm">
+
+                    <!-- 商品圖片 -->
+                    <div class="d-flex justify-content-center align-items-center bg-light"
+                         style="height:220px;">
+
+                        <img src="@product.ProductImages.First( ).ImageUrl"
+                             class="img-fluid"
+                             style="width:100%; height:100%; object-fit:contain;"
+                             alt="@product.ProductName">
+
+                    </div>
+
+
+                    <!-- 商品資訊 -->
+                    <div class="card-body">
+
+                        <span class="badge bg-info text-dark mb-2">
+                            @product.ProductType
+                        </span>
+
+                        <h5 class="card-title">
+                            @product.ProductName
+                        </h5>
+
+                        @{
+                            var minPrice = product.ProductSpecs.Min(x => x.SpecsPrice);
+                            var maxPrice = product.ProductSpecs.Max(x => x.SpecsPrice);
+                        }
+
+                        <p class="text-danger fw-bold fs-5">
+                            @if(minPrice == maxPrice)
+                            {
+                                @:NT$ @minPrice.ToString("N0")
+                            }
+                            else
+                            {
+                                @:NT$ @minPrice.ToString("N0") ~ @maxPrice.ToString("N0")
+                            }
+                        </p>
+
+                        <a asp-controller="Product"
+                           asp-action="Details"
+                           asp-route-id="@product.ProductId"
+                           class="btn btn-outline-primary w-100">
+                            查看商品
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+</div>
