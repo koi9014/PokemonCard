@@ -30,7 +30,12 @@ namespace PokemonCard.Controllers
             return View(query);
         }
 
-        public async Task<IActionResult> SellerAudit(string? keyword, string status = "all")
+        public async Task<IActionResult> SellerAudit(
+            string? keyword,
+            string status = "all",
+            string chartRange = "month",
+            DateTime? chartStart = null,
+            DateTime? chartEnd = null)
         {
             var query = _context.SellerApplications
                 .Include(application => application.User)
@@ -59,9 +64,73 @@ namespace PokemonCard.Controllers
             ViewBag.ApprovedCount = await _context.SellerApplications.CountAsync(application => application.SellerStatus == "APPROVED");
 
             var applications = await query
-               .OrderBy(application => application.SellerStatus == "PENDING" ? 0 : application.SellerStatus == "REJECTED" ? 1 : 2)
-               .ThenByDescending(application => application.ApplyAt)
-               .ToListAsync();
+                .OrderBy(application => application.SellerStatus == "PENDING" ? 0 : application.SellerStatus == "REJECTED" ? 1 : 2)
+                .ThenByDescending(application => application.ApplyAt)
+                .ToListAsync();
+
+            // ===== [賣家資格統計圖表新增開始] 計算指定期間的審核通過人數與柱狀圖資料 =====
+            var today = DateTime.Today;
+            var rangeStart = new DateTime(today.Year, today.Month, 1);
+            var rangeEnd = rangeStart.AddMonths(1);
+
+            if (string.Equals(chartRange, "year", StringComparison.OrdinalIgnoreCase))
+            {
+                rangeStart = new DateTime(today.Year, 1, 1);
+                rangeEnd = rangeStart.AddYears(1);
+                chartRange = "year";
+            }
+            else if (string.Equals(chartRange, "custom", StringComparison.OrdinalIgnoreCase)
+                && chartStart.HasValue
+                && chartEnd.HasValue
+                && chartEnd.Value.Date >= chartStart.Value.Date)
+            {
+                rangeStart = chartStart.Value.Date;
+                rangeEnd = chartEnd.Value.Date.AddDays(1);
+                chartRange = "custom";
+            }
+            else
+            {
+                chartRange = "month";
+            }
+
+            var approvedReviewDates = await _context.SellerApplicationAudits
+                .AsNoTracking()
+                .Where(audit => audit.AuditStatus == "APPROVED"
+                    && audit.ReviewedAt >= rangeStart
+                    && audit.ReviewedAt < rangeEnd)
+                .Select(audit => audit.ReviewedAt)
+                .ToListAsync();
+
+            var chartLabels = new List<string>();
+            var chartValues = new List<int>();
+            var useMonthlyChart = (rangeEnd - rangeStart).TotalDays > 62;
+
+            if (useMonthlyChart)
+            {
+                for (var month = new DateTime(rangeStart.Year, rangeStart.Month, 1); month < rangeEnd; month = month.AddMonths(1))
+                {
+                    chartLabels.Add(month.ToString("yyyy-MM"));
+                    chartValues.Add(approvedReviewDates.Count(reviewedAt =>
+                        reviewedAt.Year == month.Year && reviewedAt.Month == month.Month));
+                }
+            }
+            else
+            {
+                for (var day = rangeStart.Date; day < rangeEnd; day = day.AddDays(1))
+                {
+                    chartLabels.Add(day.ToString("MM/dd"));
+                    chartValues.Add(approvedReviewDates.Count(reviewedAt => reviewedAt.Date == day));
+                }
+            }
+
+            ViewBag.ChartRange = chartRange;
+            ViewBag.ChartStart = rangeStart.ToString("yyyy-MM-dd");
+            ViewBag.ChartEnd = rangeEnd.AddDays(-1).ToString("yyyy-MM-dd");
+            ViewBag.ApprovedSellerCount = approvedReviewDates.Count;
+            ViewBag.ApprovalChartLabels = chartLabels;
+            ViewBag.ApprovalChartValues = chartValues;
+            ViewBag.ApprovalChartUnit = useMonthlyChart ? "月份" : "日期";
+            // ===== [賣家資格統計圖表新增結束] =====
 
             return View(applications);
         }
