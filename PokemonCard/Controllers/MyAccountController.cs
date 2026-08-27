@@ -14,12 +14,12 @@ namespace PokemonCard. Controllers
         {
             _context = context;
         }
-        public IActionResult MemberCenter( )
+        public IActionResult Order( )
         {
             // 取得目前登入者的 UserId
             var userIdString = User. FindFirstValue(ClaimTypes. NameIdentifier);
 
-            // 如果沒有登入，導向登入頁
+            // 沒有登入
             if(string. IsNullOrEmpty(userIdString))
             {
                 return RedirectToAction("Login", "UserLogin");
@@ -27,15 +27,26 @@ namespace PokemonCard. Controllers
 
             int userId = int. Parse(userIdString);
 
-            // 判斷這個 User 有沒有 Seller 資料
+            // 判斷是不是賣家
             bool isSeller = _context. Sellers
                 . Any(s => s. UserId == userId);
+
+            // 查詢目前使用者的訂單
+            var orders = _context. Orders
+                . Include(o => o. Buyer)
+                . Include(o => o. Seller)
+                . Include(o => o. OrderItems)
+                    . ThenInclude(oi => oi. Product)
+                        . ThenInclude(p => p. ProductImages)
+                . Where(o => o. BuyerId == userId)
+                . ToList( );
 
             // 建立 ViewModel
             var vm = new MemberCenterViewModel
             {
                 UserId = userId,
-                IsSeller = isSeller
+                IsSeller = isSeller,
+                Orders = orders
             };
 
             return View(vm);
@@ -56,9 +67,13 @@ namespace PokemonCard. Controllers
                 . Include(p => p. Buyer)
                 . Include(p => p. Seller)
                  . Include(p => p. OrderItems)
+                     . Include(p => p. OrderItems)
+                      . ThenInclude(p => p. Product)
+                        . ThenInclude(p => p. ProductImages)
                  . Where(p => p. BuyerId == userId)
                     . ToList( );
-
+            Console. WriteLine($"UserId = {userId}");
+            Console. WriteLine($"Order Count = {data. Count}");
             return View(data);
 
 
