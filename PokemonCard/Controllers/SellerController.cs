@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace PokemonCard.Controllers;
 
-public class SellerController(PicartchuContext context, IWebHostEnvironment environment, ILogger<SellerController> logger) : Controller
+public class SellerController(PicartchuContext context, IWebHostEnvironment environment, ILogger<SellerController> logger, BannedWordReviewService bannedWordReviewService) : Controller
 {
     public override void OnActionExecuting(ActionExecutingContext actionContext)
     {
@@ -218,6 +218,37 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
         var specs = input.Specs;
         ValidateProduct(input, specs);
+
+        // ===== 新增：上架前檢查商品名稱與商品描述的違禁字 =====
+        if (input.ProductStatus == "PUBLISHED")
+        {
+            var reviewResults = await bannedWordReviewService.ReviewAsync(
+                new Dictionary<string, string?>
+                {
+                    ["商品名稱"] = input.ProductName,
+                    ["商品描述"] = input.Description
+                });
+            void AddBannedWordError(string fieldDisplayName, string modelStateKey)
+            {
+                var words = reviewResults
+                    .Where(result => result.FieldDisplayName == fieldDisplayName)
+                    .Select(result => result.MatchedWord)
+                    .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                    .ToList();
+
+                if (words.Count > 0)
+                {
+                    ModelState.AddModelError(
+                        modelStateKey,
+                        $"{fieldDisplayName}包含違禁字「{string.Join("」、「", words)}」，不符合審核。");
+                }
+            }
+
+            AddBannedWordError("商品名稱", nameof(input.ProductName));
+            AddBannedWordError("商品描述", nameof(input.Description));
+        }
+        // ===== 新增結束 =====
+
 
         if (!ModelState.IsValid)
         {
