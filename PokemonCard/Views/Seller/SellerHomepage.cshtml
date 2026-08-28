@@ -1,0 +1,359 @@
+﻿@model PokemonCard.Models.SellerDashboardViewModel
+@{
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
+    ViewData["Title"] = "賣家總覽";
+
+    var orderStatusMap = new Dictionary<string, string>
+    {
+        { "PENDING", "待付款" },
+        { "PAID", "已付款" },
+        { "PROCESSING", "待出貨" },
+        { "SHIPPED", "運送中" },
+        { "COMPLETED", "已完成" },
+        { "CANCELLED", "已取消" }
+    };
+
+    // 2. 顏色 Class 對照函式
+    string GetStatusStyle(string status) => status switch
+    {
+        "PENDING" => "bg-amber-100 text-amber-800 border-amber-300",     // 待付款：黃/橘色
+        "PAID" => "bg-blue-100 text-blue-800 border-blue-300",       // 已付款：藍色
+        "PROCESSING" => "bg-sky-100 text-sky-800 border-sky-300",         // 處理中：天藍色
+        "SHIPPED" => "bg-secondary/10 text-secondary border-secondary/20", // 已出貨：綠色
+        "COMPLETED" => "bg-emerald-100 text-emerald-800 border-emerald-300", // 已完成：深綠色
+        "CANCELLED" => "bg-rose-100 text-rose-800 border-rose-300",       // 已取消：紅色
+        _ => "bg-gray-100 text-gray-700 border-gray-300"       // 預設：灰色
+    };
+
+    // 抓取 Controller 傳過來的 chartData，若沒有就預設長度 12 的 0 陣列
+    var rawChartData = ViewBag.ChartData as decimal[] ?? new decimal[12];
+    var chartDataJson = System.Text.Json.JsonSerializer.Serialize(rawChartData);
+}
+
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+        darkMode: "class",
+        theme: {
+        extend: {
+        "colors": {
+        "tertiary-fixed-dim": "#99cbff", "secondary": "#126d27", "surface-dim": "#cbdde7",
+        "on-background": "#0d1e25", "on-surface": "#0d1e25", "tertiary": "#00609a",
+        "on-tertiary-fixed-variant": "#004a78", "surface-variant": "#d4e5ef", "on-error-container": "#93000a",
+        "surface-container-high": "#d9ebf5", "surface-container": "#dff1fb", "inverse-on-surface": "#e2f3fd",
+        "on-secondary-container": "#19722b", "error": "#ba1a1a", "primary-container": "#d23e3e",
+        "tertiary-fixed": "#cfe5ff", "on-tertiary-fixed": "#001d34", "background": "#f4faff",
+        "tertiary-container": "#0079c1", "outline-variant": "#e2bebb", "secondary-container": "#9cf49c",
+        "on-tertiary": "#ffffff", "on-secondary-fixed-variant": "#005318", "surface-container-highest": "#d4e5ef",
+        "on-tertiary-container": "#fdfcff", "secondary-fixed": "#9ff79f", "error-container": "#ffdad6",
+        "surface-container-low": "#e7f6ff", "surface-tint": "#b3272a", "on-primary": "#ffffff",
+        "surface-bright": "#f4faff", "surface-container-lowest": "#ffffff", "surface": "#f4faff",
+        "outline": "#8e706e", "primary-fixed-dim": "#ffb3ae", "inverse-primary": "#ffb3ae",
+        "on-primary-container": "#fffbff", "inverse-surface": "#23333a", "on-error": "#ffffff",
+        "primary": "#b02528", "on-primary-fixed-variant": "#910816", "on-primary-fixed": "#410004",
+        "primary-fixed": "#ffdad7", "on-surface-variant": "#5a413f", "secondary-fixed-dim": "#83da85",
+        "on-secondary": "#ffffff", "on-secondary-fixed": "#002105"
+        },
+        "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+        "spacing": { "max-width": "1280px", "unit": "4px", "margin-mobile": "16px", "gutter": "16px", "margin-desktop": "24px" },
+        "fontSize": {
+        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+        "label-bold": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+        "price-display": ["24px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+        }
+        }
+        }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+<div class="seller-dashboard">
+
+    <main class="w-full min-h-screen bg-transparent z-10 relative">
+        <div class="flex flex-col w-full h-full relative bg-transparent">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-secondary-container rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 translate-x-1/2 -translate-y-1/2"></div>
+            <div class="flex flex-col w-full max-w-[1440px] mx-auto h-full min-h-[800px] relative my-4">
+                <div class="flex w-full items-center gap-4 px-margin-mobile pt-margin-desktop md:px-margin-desktop">
+                    <a href="@Url.Action("MemberCenter", "MyAccount")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
+                    <h1 class="text-2xl font-bold">賣家總覽</h1>
+                </div>
+               
+
+                <!-- Main Content -->
+                <main class="flex w-full flex-1 flex-col min-w-0 px-margin-mobile py-margin-desktop md:px-margin-desktop gap-margin-desktop">
+                    <div class="bg-surface-container-lowest/90 backdrop-blur-md rounded-2xl shadow-xl border border-outline-variant/30 p-margin-desktop flex flex-col gap-margin-desktop">
+
+                        <!-- 查詢區間 Header 表單 -->
+                        <form method="get" action="@Url.Action("SellerHomepage", "Seller")" id="filterForm" class="flex flex-col md:flex-row items-start md:items-center justify-between gap-gutter bg-surface/50 p-margin-mobile rounded-xl border border-outline-variant/20">
+                            <!-- 隱藏的 rangeType 欄位，確保重新載入後能記住選了什麼 -->
+                            <input type="hidden" name="rangeType" id="rangeType" value="@(Context.Request.Query["rangeType"].ToString())" />
+
+                            <div class="flex items-center gap-gutter flex-wrap w-full md:w-auto">
+                                <div class="flex items-center gap-unit">
+                                    <label class="text-body-sm text-on-surface-variant font-title-md" for="date-range">查詢區間:</label>
+                                    <div class="relative">
+                                        <select class="appearance-none bg-surface border border-outline-variant text-on-surface text-body-sm py-1.5 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer min-w-[120px]" id="date-range">
+                                            <option value="this-month">本月</option>
+                                            <option value="last-month">上月</option>
+                                            <option value="this-year">今年</option>
+                                            <option value="custom">自訂範圍</option>
+                                        </select>
+                                        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">arrow_drop_down</span>
+                                    </div>
+                                </div>
+
+                                <!-- 自訂日期選擇框 -->
+                                <div id="custom-date-container" class="flex items-center gap-2 hidden">
+                                    <input type="date" name="startDate" id="startDate" value="@ViewBag.StartDate" class="bg-surface border border-outline-variant text-body-sm px-2 py-1 rounded-lg focus:outline-none focus:border-primary" />
+                                    <span class="text-on-surface-variant">至</span>
+                                    <input type="date" name="endDate" id="endDate" value="@ViewBag.EndDate" class="bg-surface border border-outline-variant text-body-sm px-2 py-1 rounded-lg focus:outline-none focus:border-primary" />
+                                    <button type="submit" class="bg-tertiary text-white text-body-sm px-3 py-1 rounded-lg hover:bg-tertiary-container transition-colors">查詢</button>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-unit bg-secondary/10 px-margin-mobile py-2 rounded-full border border-secondary/20">
+                                <span class="material-symbols-outlined text-secondary text-[20px]">fiber_new</span>
+                                <span class="text-body-sm text-on-surface-variant">今日新增訂單數:</span>
+                                <span class="font-title-md text-secondary">@(Model?.TodayNewOrders ?? 0)</span>
+                            </div>
+                        </form>
+
+                        <!-- Quick Stats Cards -->
+                        <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter">
+                            <div class="relative overflow-hidden group bg-surface/50 p-margin-mobile rounded-xl border border-outline-variant/20 flex flex-col items-center justify-center text-center gap-2">
+                                <div class="absolute -right-4 -top-4 w-16 h-16 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                                <span class="text-body-sm text-on-surface-variant font-title-md">銷售</span>
+                                <span class="font-price-display text-on-surface"><span class="text-title-md mr-1">NT$</span>@(Model?.TotalSales.ToString("N0") ?? "0")</span>
+                            </div>
+                            <div class="relative overflow-hidden group bg-surface/50 p-margin-mobile rounded-xl border border-outline-variant/20 flex flex-col items-center justify-center text-center gap-2">
+                                <div class="absolute -right-4 -top-4 w-16 h-16 bg-tertiary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                                <span class="text-body-sm text-on-surface-variant font-title-md">訂單數</span>
+                                <span class="font-price-display text-on-surface">@(Model?.TotalOrders ?? 0)</span>
+                            </div>
+                            <div class="relative overflow-hidden group bg-surface/50 p-margin-mobile rounded-xl border border-outline-variant/20 flex flex-col items-center justify-center text-center gap-2">
+                                <div class="absolute -right-4 -top-4 w-16 h-16 bg-secondary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                                <span class="text-body-sm text-on-surface-variant font-title-md">平均訂單金額</span>
+                                <span class="font-price-display text-on-surface"><span class="text-title-md mr-1">NT$</span>@(Model?.AvgOrderValue.ToString("N0") ?? "0")</span>
+                            </div>
+                            <div class="relative overflow-hidden group bg-surface/50 p-margin-mobile rounded-xl border border-outline-variant/20 flex flex-col items-center justify-center text-center gap-2">
+                                <div class="absolute -right-4 -top-4 w-16 h-16 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                                <span class="text-body-sm text-on-surface-variant font-title-md">本月已入帳金額</span>
+                                <span class="font-price-display text-on-surface"><span class="text-title-md mr-1">NT$</span>@(Model?.MonthlyCreditedAmount.ToString("N0") ?? "0")</span>
+                            </div>
+                            <div class="relative overflow-hidden group bg-surface/50 p-margin-mobile rounded-xl border border-outline-variant/20 flex flex-col items-center justify-center text-center gap-2">
+                                <div class="absolute -right-4 -top-4 w-16 h-16 bg-error/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                                <span class="text-body-sm text-on-surface-variant font-title-md">待出貨數量</span>
+                                <span class="font-price-display text-on-surface">@(Model?.PendingShipments ?? 0)</span>
+                            </div>
+                        </section>
+
+                        <!-- Chart.js 畫布區域（使用固定 min-h 強制渲染） -->
+                        <section class="bg-surface/50 rounded-xl border border-outline-variant/20 p-margin-desktop flex flex-col gap-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h2 class="text-title-md text-on-surface">總銷售額趨勢 (Sales Overview)</h2>
+                                    <p class="text-body-sm text-on-surface-variant">年度每月營收分佈</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-body-sm text-on-surface-variant">年度累積總銷售:</span>
+                                    <span class="text-title-md font-bold text-tertiary ml-1">NT$ @(Model?.TotalRevenueDisplay ?? "0")</span>
+                                </div>
+                            </div>
+                            <div class="w-full h-[320px] min-h-[320px] relative">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </section>
+
+                        <!-- 最新訂單表格 -->
+                        <section class="bg-surface/50 rounded-xl border border-outline-variant/20 p-margin-desktop flex flex-col gap-4">
+                            <div class="flex items-center justify-between">
+                                <h2 class="text-title-md text-on-surface">最新訂單</h2>
+                                <a class="text-body-sm text-tertiary hover:underline" href="~/Seller/OrderManage">查看全部</a>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-outline-variant/30 text-label-bold text-on-surface-variant">
+                                            <th class="py-3 px-4">訂單編號</th>
+                                            <th class="py-3 px-4">商品名稱</th>
+                                            <th class="py-3 px-4">買家</th>
+                                            <th class="py-3 px-4">金額</th>
+                                            <th class="py-3 px-4">狀態</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-outline-variant/20 text-body-sm">
+                                        @if (Model?.RecentOrders != null && Model.RecentOrders.Any())
+                                        {
+                                            foreach (var order in Model.RecentOrders)
+                                            {
+                                                <tr class="hover:bg-surface-variant/30 transition-colors">
+                                                    <td class="py-3 px-4 font-bold text-tertiary">#@order.OrderNo</td>
+                                                    <td class="py-3 px-4">@order.FirstProductName</td>
+                                                    <td class="py-3 px-4">@order.BuyerName</td>
+                                                    <td class="py-3 px-4 font-bold">NT$ @order.OrderAmount.ToString("N0")</td>
+                                                    <td class="py-3 px-4">
+                                                        <span class="px-2.5 py-1 rounded-full text-label-bold border @GetStatusStyle(order.OrderStatus)">
+                                                            @(orderStatusMap.TryGetValue(order.OrderStatus, out var cnName) ? cnName : order.OrderStatus)
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="py-6 text-center text-on-surface-variant/60">目前暫無最新訂單資料</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                    </div>
+                </main>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 腳本處理 -->
+    <script>
+            document.addEventListener("DOMContentLoaded", function () {
+            // -------------------------------------------------------------
+            // 1. Chart.js 折線圖渲染
+            // -------------------------------------------------------------
+            // 將 C# 序列化後的 JSON 陣列直接作為原生 JS 陣列載入
+            const rawChartData = @Html.Raw(chartDataJson);
+
+            // 可在開發者工具 (F12) Console 查看是否成功印出 12 個月份的數字陣列
+            console.log("Chart.js 接收到的營收資料：", rawChartData);
+
+            const canvas = document.getElementById('salesChart');
+            if (canvas) {
+            const ctx = canvas.getContext('2d');
+
+            // 避免重複渲染造成的 Canvas 重疊 Bug
+            if (window.mySalesChart instanceof Chart) {
+            window.mySalesChart.destroy();
+            }
+
+            window.mySalesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+            datasets: [{
+            label: '銷售額 (NT$)',
+            data: rawChartData,
+            borderColor: '#00609a',
+            backgroundColor: 'rgba(0, 96, 154, 0.15)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#00609a',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7
+            }]
+            },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+            legend: { display: false }
+            },
+            scales: {
+            y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: {
+            callback: function(value) {
+            return 'NT$ ' + value.toLocaleString();
+            }
+            }
+            },
+            x: {
+            grid: { display: false }
+            }
+            }
+            }
+            });
+            }
+
+            // -------------------------------------------------------------
+            // 2. 查詢區間下拉選單與「自訂範圍」記憶邏輯
+            // -------------------------------------------------------------
+            const dateRangeSelect = document.getElementById('date-range');
+            const customDateContainer = document.getElementById('custom-date-container');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const filterForm = document.getElementById('filterForm');
+            const rangeTypeInput = document.getElementById('rangeType');
+
+            // 讀取隱藏欄位 rangeType 的值，預設為 this-year
+            const currentRangeType = rangeTypeInput.value || "this-year";
+            dateRangeSelect.value = currentRangeType;
+
+            // 僅有當選擇 "custom" 時顯示自訂日期區間，否則隱藏
+            if (currentRangeType === 'custom') {
+            customDateContainer.classList.remove('hidden');
+            } else {
+            customDateContainer.classList.add('hidden');
+            }
+
+            // 日期格式化工具 (YYYY-MM-DD)
+            function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+            }
+
+            // 下拉選單切換事件
+            dateRangeSelect.addEventListener('change', function () {
+            const val = this.value;
+            const now = new Date();
+            rangeTypeInput.value = val; // 將狀態同步寫入 hidden 欄位
+
+            if (val === 'custom') {
+            // 切換到自訂時僅展開日期輸入框，讓使用者填完再手動點按查詢
+            customDateContainer.classList.remove('hidden');
+            } else {
+            customDateContainer.classList.add('hidden');
+
+            // 自動計算對應區間的起訖日期
+            if (val === 'this-month') {
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            startDateInput.value = formatDate(firstDay);
+            endDateInput.value = formatDate(lastDay);
+            } else if (val === 'last-month') {
+            const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+            startDateInput.value = formatDate(firstDay);
+            endDateInput.value = formatDate(lastDay);
+            } else if (val === 'this-year') {
+            const firstDay = new Date(now.getFullYear(), 0, 1);
+            const lastDay = new Date(now.getFullYear(), 11, 31);
+            startDateInput.value = formatDate(firstDay);
+            endDateInput.value = formatDate(lastDay);
+            }
+
+            // 提交表單重新載入頁面
+            filterForm.submit();
+            }
+            });
+            });
+    </script>
+</div>
