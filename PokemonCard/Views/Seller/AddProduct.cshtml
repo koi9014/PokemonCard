@@ -1,0 +1,281 @@
+@model PokemonCard.Controllers.AddProductInput
+@{
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
+    var locations = new[] { "北海道", "東北", "關東", "中部", "近畿", "中國", "四國", "九州", "沖繩" };
+    var productTypes = new[] { "絨毛娃娃", "模型與公仔", "集換式卡牌", "生活與家居", "服飾與配件", "文具與辦公用品", "電玩周邊", "3C配件", "其他" };
+}
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>新增商品 - PiCartChu</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#bc0100', secondary: '#745b00', tertiary: '#3c4dcb', surface: '#f8f9fa', 'on-surface': '#191c1d', 'on-surface-variant': '#603e39', 'surface-container': '#edeeef', 'surface-container-lowest': '#ffffff', 'surface-variant': '#e1e3e4', 'outline-variant': '#ebbbb4', error: '#ba1a1a' }, spacing: { md: '16px', lg: '24px', xl: '40px', sm: '8px', xs: '4px' } } } };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+<div class="min-h-screen bg-surface font-['Inter'] text-on-surface">
+    <main class="mx-auto w-full max-w-6xl p-4 sm:p-6 lg:p-10">
+        <form id="product-form" asp-action="@(Model.ProductId == 0 ? "AddProduct" : "UpdateProduct")" method="post" enctype="multipart/form-data" class="rounded-2xl border border-outline-variant/40 bg-white p-5 shadow-sm sm:p-8">
+            @Html.AntiForgeryToken()
+            <input asp-for="ProductId" type="hidden" />
+
+            <div class="mb-8 flex items-center gap-4">
+                <a href="~/Seller/ProductManage" class="rounded-full border border-surface-variant bg-surface-container-lowest p-2 transition hover:bg-surface-variant" aria-label="返回商品管理">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold">@(Model.ProductId == 0 ? "新增商品" : "修改商品")</h1>
+                    <p class="mt-1 text-sm text-on-surface-variant">填寫商品資訊後即可上架或下架。</p>
+                </div>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="mb-5 rounded-lg bg-red-50 p-4 text-sm text-error"></div>
+            }
+
+            <div class="grid grid-cols-1 gap-10 lg:grid-cols-2">
+                <div class="space-y-7">
+                    <section>
+                        <div class="mb-3 flex items-center justify-between">
+                            <label class="text-lg font-bold">商品照片</label>
+                            <span id="photo-count" class="text-sm font-bold text-on-surface-variant">0/9</span>
+                        </div>
+                        <input asp-for="Images" id="images" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" />
+                        <div id="photo-gallery" class="flex flex-wrap gap-2">
+                            @foreach (var imageUrl in Model.ExistingImages)
+                            {
+                                <div class="existing-photo relative h-24 w-24 overflow-hidden rounded-lg border border-outline-variant" data-image-url="@imageUrl">
+                                    <img src="@imageUrl" class="h-full w-full object-cover" alt="既有商品照片" />
+                                    <button type="button" class="remove-existing-photo absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white" aria-label="刪除這張照片"><span class="material-symbols-outlined text-sm">close</span></button>
+                                </div>
+                            }
+                            <button type="button" id="add-photo" class="flex h-24 w-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-surface text-primary transition hover:border-primary hover:bg-primary/5">
+                                <span class="material-symbols-outlined">add</span><span class="text-xs font-bold">加入照片</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Images" class="mt-2 block text-sm text-error"></span>
+                        <p class="mt-2 text-xs text-on-surface-variant">最多 9 張，支援 JPG、PNG、WEBP；每張不超過 5 MB。</p>
+                    </section>
+
+                    <section>
+                        <label asp-for="ProductName" class="mb-2 block text-lg font-bold">商品名稱</label>
+                        <div class="relative">
+                            <input asp-for="ProductName" id="product-name" maxlength="50" class="w-full rounded-lg border-outline-variant bg-surface pr-16" />
+                            <span id="name-count" class="absolute right-3 top-3 text-xs text-on-surface-variant">0/50</span>
+                        </div>
+                        <span asp-validation-for="ProductName" class="mt-2 block text-sm text-error"></span>
+                    </section>
+
+                    <section>
+                        <label asp-for="Description" class="mb-2 block text-lg font-bold">商品描述</label>
+                        <div class="relative">
+                            <textarea asp-for="Description" id="description" maxlength="500" rows="10" class="custom-scrollbar w-full resize-none rounded-lg border-outline-variant bg-surface pb-8" placeholder="請輸入商品描述..."></textarea>
+                            <span id="description-count" class="absolute bottom-2 right-3 text-xs text-on-surface-variant">0/500</span>
+                        </div>
+                        <span asp-validation-for="Description" class="mt-2 block text-sm text-error"></span>
+                    </section>
+                </div>
+
+                <div class="space-y-7">
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        <section>
+                            <label asp-for="Location" class="mb-2 block text-lg font-bold">地區</label>
+                            <select asp-for="Location" class="w-full rounded-lg border-outline-variant bg-surface">
+                                <option value="">請選擇地區</option>
+                                @foreach (var location in locations) { <option value="@location">@location</option> }
+                            </select>
+                            <span asp-validation-for="Location" class="mt-2 block text-sm text-error"></span>
+                        </section>
+                        <section>
+                            <label asp-for="ProductType" class="mb-2 block text-lg font-bold">商品分類</label>
+                            <select asp-for="ProductType" class="w-full rounded-lg border-outline-variant bg-surface">
+                                <option value="">請選擇商品分類</option>
+                                @foreach (var productType in productTypes) { <option value="@productType">@productType</option> }
+                            </select>
+                            <span asp-validation-for="ProductType" class="mt-2 block text-sm text-error"></span>
+                        </section>
+                    </div>
+
+                    <section>
+                        <h2 class="mb-3 text-lg font-bold">販售型態</h2>
+                        <div class="flex gap-6">
+                            <label class="flex cursor-pointer items-center gap-2"><input asp-for="SaleType" type="radio" value="preorder" class="text-primary" />預購</label>
+                            <label class="flex cursor-pointer items-center gap-2"><input asp-for="SaleType" type="radio" value="instock" class="text-primary" />現貨</label>
+                        </div>
+                    </section>
+
+                    <section class="grid grid-cols-1 gap-4 rounded-xl border border-outline-variant/50 bg-surface p-4 sm:grid-cols-2">
+                        <div>
+                            <label asp-for="ProductStatus" class="mb-1 block font-bold">商品狀態</label>
+                            <select asp-for="ProductStatus" class="w-full rounded-lg border-outline-variant bg-white">
+                                <option value="PUBLISHED">上架</option>
+                                <option value="DRAFT">下架</option>
+                            </select>
+                            <p class="mt-1 text-xs text-on-surface-variant">下架商品會儲存，但不對買家顯示。</p>
+                        </div>
+                        <div>
+                            <label asp-for="ScheduledAt" class="mb-1 block font-bold">上架日期（排定）</label>
+                            <input asp-for="ScheduledAt" id="scheduled-at" type="datetime-local" class="w-full rounded-lg border-outline-variant bg-white text-sm" />
+                            <p class="mt-1 text-xs text-on-surface-variant">留空代表立即上架。</p>
+                        </div>
+                    </section>
+
+                    <section>
+                        <div class="mb-3 flex items-center justify-between">
+                            <h2 class="text-lg font-bold">商品規格</h2>
+                            <label class="flex cursor-pointer items-center gap-2 text-sm font-bold text-on-surface-variant">
+                                單一規格<input id="single-spec" type="checkbox" checked class="h-4 w-4 rounded text-primary" />
+                            </label>
+                        </div>
+                        <div id="single-spec-panel" class="grid grid-cols-2 gap-3 rounded-xl border border-outline-variant/50 bg-surface p-4">
+                            <input type="hidden" name="Specs[0].Category" value="" />
+                            <input id="single-option" name="Specs[0].Option" readonly class="col-span-2 rounded-lg border-outline-variant bg-white text-on-surface-variant" value="單一規格" />
+                            <div><label class="mb-1 block text-sm font-bold">價格</label><input id="single-price" name="Specs[0].Price" type="number" min="0" class="w-full rounded-lg border-outline-variant bg-white" placeholder="0" /></div>
+                            <div><label class="mb-1 block text-sm font-bold">庫存</label><input id="single-stock" name="Specs[0].Stock" type="number" min="0" class="w-full rounded-lg border-outline-variant bg-white" placeholder="0" /></div>
+                        </div>
+                        <div id="multi-spec-panel" class="hidden rounded-xl border border-outline-variant/50 bg-surface p-4">
+                            <div id="spec-list" class="space-y-4"></div>
+                            <button type="button" id="add-spec" class="mt-4 rounded-lg border border-primary px-3 py-2 text-sm font-bold text-primary hover:bg-primary/5">+ 新增規格類別</button>
+                        </div>
+                        <span class="mt-2 block text-sm text-error">@Html.ValidationMessage("Specs")</span>
+                    </section>
+                </div>
+            </div>
+
+            <div class="mt-10 flex flex-wrap items-center justify-end gap-3 border-t border-outline-variant/50 pt-6">
+                <button type="button" id="cancel" class="rounded-lg border-2 border-primary bg-white px-6 py-3 font-bold text-primary transition hover:bg-primary hover:text-white">取消</button>
+                <button type="submit" class="rounded-lg bg-primary px-6 py-3 font-bold text-white transition hover:bg-red-800">@(Model.ProductId == 0 ? "新增商品" : "儲存商品變更")</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        const form = document.getElementById('product-form');
+        const images = document.getElementById('images');
+        const gallery = document.getElementById('photo-gallery');
+        const photoCount = document.getElementById('photo-count');
+        const files = new DataTransfer();
+        const nameInput = document.getElementById('product-name');
+        const description = document.getElementById('description');
+        const singleToggle = document.getElementById('single-spec');
+        const singlePanel = document.getElementById('single-spec-panel');
+        const multiPanel = document.getElementById('multi-spec-panel');
+        const specList = document.getElementById('spec-list');
+
+        function updateCounter(input, output, max) { output.textContent = `${input.value.length}/${max}`; }
+        updateCounter(nameInput, document.getElementById('name-count'), 50);
+        updateCounter(description, document.getElementById('description-count'), 500);
+        nameInput.addEventListener('input', () => updateCounter(nameInput, document.getElementById('name-count'), 50));
+        description.addEventListener('input', () => updateCounter(description, document.getElementById('description-count'), 500));
+        const productStatus = document.getElementById('ProductStatus');
+        const scheduledAt = document.getElementById('scheduled-at');
+        function updateScheduleState() { const isDraft = productStatus.value === 'DRAFT'; scheduledAt.disabled = isDraft; if (isDraft) scheduledAt.value = ''; }
+        productStatus.addEventListener('change', updateScheduleState);
+        updateScheduleState();
+
+        document.getElementById('add-photo').addEventListener('click', () => images.click());
+        images.addEventListener('change', () => {
+            const available = 9 - document.querySelectorAll('.existing-photo').length - files.files.length;
+            [...images.files].slice(0, Math.max(0, available)).forEach(file => files.items.add(file));
+            images.files = files.files;
+            renderPhotos();
+        });
+        function renderPhotos() {
+            gallery.querySelectorAll('.photo').forEach(element => element.remove());
+            [...files.files].forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'photo relative h-24 w-24 overflow-hidden rounded-lg border border-outline-variant';
+                const image = document.createElement('img'); image.src = URL.createObjectURL(file); image.className = 'h-full w-full object-cover';
+                const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white'; remove.innerHTML = '<span class="material-symbols-outlined text-sm">close</span>';
+                remove.addEventListener('click', () => { const retained = [...files.files].filter((_, itemIndex) => itemIndex !== index); files.items.clear(); retained.forEach(item => files.items.add(item)); images.files = files.files; renderPhotos(); });
+                item.append(image, remove); gallery.insertBefore(item, document.getElementById('add-photo'));
+            });
+            photoCount.textContent = `${document.querySelectorAll('.existing-photo').length + files.files.length}/9`;
+            document.getElementById('add-photo').classList.toggle('hidden', document.querySelectorAll('.existing-photo').length + files.files.length >= 9);
+        }
+
+        document.querySelectorAll('.remove-existing-photo').forEach(button => button.addEventListener('click', () => {
+            const photo = button.closest('.existing-photo');
+            const removed = document.createElement('input');
+            removed.type = 'hidden';
+            removed.name = 'RemoveImageUrls';
+            removed.value = photo.dataset.imageUrl;
+            form.appendChild(removed);
+            photo.remove();
+            renderPhotos();
+        }));
+        renderPhotos();
+
+        function createOption(group, value = {}) {
+            const row = document.createElement('div');
+            row.className = 'option-row grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]';
+            row.innerHTML = '<input type="hidden" class="category-value"><input class="option rounded-lg border-outline-variant bg-white" placeholder="選項，例如：藍色"><div class="grid grid-cols-2 gap-2"><input class="price min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="價格"><input class="stock min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="庫存"></div><button type="button" class="remove self-center rounded-lg p-2 text-error"><span class="material-symbols-outlined">delete</span></button>';
+            row.querySelector('.remove').addEventListener('click', () => row.remove());
+            row.querySelector('.option').value = value.option ?? '';
+            row.querySelector('.price').value = value.price ?? '';
+            row.querySelector('.stock').value = value.stock ?? '';
+            group.querySelector('.option-list').appendChild(row);
+        }
+        function createSpec(category = '', options = []) {
+            const group = document.createElement('div');
+            group.className = 'spec-group rounded-lg border border-outline-variant/60 bg-white p-3';
+            group.innerHTML = '<div class="mb-3 flex gap-2"><input class="spec-category min-w-0 flex-1 rounded-lg border-outline-variant" placeholder="規格名稱，例如：顏色"><button type="button" class="remove-group rounded-lg p-2 text-error"><span class="material-symbols-outlined">delete</span></button></div><div class="mb-2 grid grid-cols-1 gap-2 text-xs font-bold text-on-surface-variant sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"><span>商品選項</span><span>價格／庫存</span></div><div class="option-list space-y-2"></div><button type="button" class="add-option mt-3 text-sm font-bold text-primary hover:underline">+ 新增選項</button>';
+            group.querySelector('.remove-group').addEventListener('click', () => group.remove());
+            group.querySelector('.add-option').addEventListener('click', () => createOption(group));
+            group.querySelector('.spec-category').value = category;
+            specList.appendChild(group);
+            if (options.length) options.forEach(option => createOption(group, option));
+            else createOption(group);
+        }
+        document.getElementById('add-spec').addEventListener('click', createSpec);
+        function updateSpecMode() {
+            const isSingle = singleToggle.checked;
+            singlePanel.classList.toggle('hidden', !isSingle);
+            multiPanel.classList.toggle('hidden', isSingle);
+            singlePanel.querySelectorAll('input').forEach(input => input.disabled = !isSingle);
+            multiPanel.querySelectorAll('input').forEach(input => input.disabled = isSingle);
+            if (!isSingle && !specList.children.length) createSpec();
+        }
+        singleToggle.addEventListener('change', updateSpecMode);
+        updateSpecMode();
+
+        const savedSpecs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Specs));
+        if (savedSpecs.length) {
+            const isSingleSpec = savedSpecs.length === 1 && !savedSpecs[0].Category;
+            if (isSingleSpec) {
+                singleToggle.checked = true;
+                document.getElementById('single-option').value = savedSpecs[0].Option || '單一規格';
+                document.getElementById('single-price').value = savedSpecs[0].Price;
+                document.getElementById('single-stock').value = savedSpecs[0].Stock;
+                updateSpecMode();
+            } else {
+                singleToggle.checked = false;
+                specList.innerHTML = '';
+                Object.entries(savedSpecs.reduce((groups, spec) => {
+                    (groups[spec.Category || '未分類規格'] ??= []).push({ option: spec.Option, price: spec.Price, stock: spec.Stock });
+                    return groups;
+                }, {})).forEach(([category, options]) => createSpec(category, options));
+                updateSpecMode();
+            }
+        }
+
+        function renumberSpecs() {
+            let index = 0;
+            specList.querySelectorAll('.spec-group').forEach(group => {
+                group.querySelectorAll('.option-row').forEach(row => {
+                    const category = row.querySelector('.category-value');
+                    category.name = `Specs[${index}].Category`;
+                    category.value = group.querySelector('.spec-category').value;
+                    row.querySelector('.option').name = `Specs[${index}].Option`;
+                    row.querySelector('.price').name = `Specs[${index}].Price`;
+                    row.querySelector('.stock').name = `Specs[${index}].Stock`;
+                    index++;
+                });
+            });
+        }
+        form.addEventListener('submit', renumberSpecs);
+        document.getElementById('cancel').addEventListener('click', () => { if (confirm('確定要取消嗎？尚未儲存的內容會遺失。')) location.href = '@Url.Action("ProductManage", "Seller")'; });
+    </script>
+</div>

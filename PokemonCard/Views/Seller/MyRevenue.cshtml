@@ -1,0 +1,186 @@
+﻿@model IEnumerable<PokemonCard.Models.RevenueViewModel>
+
+@{
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
+    string currentStatus = ViewBag.CurrentStatus as string ?? "全部";
+    string startDate = ViewBag.StartDate as string ?? "";
+    string endDate = ViewBag.EndDate as string ?? "";
+}
+
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+        darkMode: "class",
+        theme: {
+        extend: {
+        "colors": {
+        "tertiary-fixed-dim": "#99cbff",
+        "secondary": "#126d27",
+        "surface-dim": "#cbdde7",
+        "on-background": "#0d1e25",
+        "on-surface": "#0d1e25",
+        "tertiary": "#00609a",
+        "surface-variant": "#d4e5ef",
+        "surface-container-high": "#d9ebf5",
+        "surface-container": "#dff1fb",
+        "background": "#f4faff",
+        "tertiary-container": "#0079c1",
+        "outline-variant": "#e2bebb",
+        "surface-container-highest": "#d4e5ef",
+        "surface-container-low": "#e7f6ff",
+        "surface-bright": "#f4faff",
+        "surface-container-lowest": "#ffffff",
+        "surface": "#f4faff",
+        "primary": "#b02528",
+        "on-primary": "#ffffff",
+        "on-surface-variant": "#5a413f"
+        },
+        "fontFamily": {
+        "body": ["Inter", "sans-serif"]
+        }
+        }
+        }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<div class="seller-revenue font-body bg-surface text-on-surface min-h-screen p-4 md:p-8">
+    <div class="max-w-[1280px] w-full mx-auto flex flex-col gap-6">
+
+        <!-- Header Section -->
+        <div class="flex w-full items-center gap-4 px-margin-mobile pt-margin-desktop md:px-margin-desktop">
+            <a href="@Url.Action("MemberCenter", "MyAccount")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
+            <h1 class="text-2xl font-bold">營收明細</h1>
+        </div>
+
+        <!-- Main Container -->
+        <div class="w-full bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm flex flex-col overflow-hidden">
+
+            <form id="searchForm" method="get" action="@Url.Action("MyRevenue", "Seller")" class="p-6 border-b border-outline-variant flex flex-col gap-4">
+
+                <input type="hidden" id="statusInput" name="status" value="@currentStatus" />
+
+                <div class="flex flex-col sm:flex-row items-center gap-4 w-full">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <!-- 開始日期 -->
+                        <input name="startDate" value="@startDate" type="date" class="...">
+                        <span>~</span>
+                        <!-- 結束日期 -->
+                        <input name="endDate" value="@endDate" type="date" class="...">
+                    </div>
+                    <button type="submit"
+                            class="w-full sm:w-auto px-6 py-2.5 bg-tertiary/10 hover:bg-tertiary/20 text-tertiary font-bold text-sm rounded-lg border border-tertiary/20 transition-all whitespace-nowrap cursor-pointer">
+                        查詢
+                    </button>
+                </div>
+
+                <!-- 狀態頁籤 -->
+                <div class="flex items-center gap-2 mt-2 overflow-x-auto pb-1">
+                    @{
+                        var tabs = new[] { "全部", "待撥款", "撥款完成", "撥款取消" };
+                        string activeClass = "bg-primary text-on-primary font-bold text-xs whitespace-nowrap transition-colors px-4 py-1.5 rounded-full cursor-pointer";
+                        string inactiveClass = "bg-surface-container-lowest text-on-surface-variant border border-outline-variant hover:bg-surface-container hover:text-on-surface font-bold text-xs whitespace-nowrap transition-colors px-4 py-1.5 rounded-full cursor-pointer";
+                    }
+
+                    @foreach (var tab in tabs)
+                    {
+                        bool isActive = currentStatus == tab;
+                        <button type="button"
+                                onclick="filterByStatus('@tab')"
+                                class="@(isActive ? activeClass : inactiveClass)">
+                            @tab
+                        </button>
+                    }
+                </div>
+            </form>
+
+            <!-- Table Section -->
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse min-w-[1000px]">
+                    <thead>
+                        <tr class="bg-surface-container border-b border-outline-variant text-xs font-bold text-on-surface uppercase tracking-wider">
+                            <th class="py-4 px-4">訂單編號</th>
+                            <th class="py-4 px-4">狀態</th>
+                            <th class="py-4 px-4 text-right">訂單金額</th>
+                            <th class="py-4 px-4 text-center">平台抽成%數</th>
+                            <th class="py-4 px-4 text-right">平台服務費</th>
+                            <th class="py-4 px-4 text-right">調整金額</th>
+                            <th class="py-4 px-4 text-right">實際撥款金額</th>
+                            <th class="py-4 px-4 text-center">入帳日期</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-on-surface">
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                bool isPending = item.RemitResult == "待撥款";
+
+                                <tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+                                    <td class="py-4 px-4 font-medium hover:text-tertiary cursor-pointer">
+                                        @item.OrderNo
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        @if (isPending)
+                                        {
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 font-bold text-xs">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>@(string.IsNullOrEmpty(item.RemitResult) ? "待撥款" : item.RemitResult)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/10 text-secondary font-bold text-xs">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>@item.RemitResult
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="py-4 px-4 text-right font-bold">$@item.OrderAmount.ToString("N0")</td>
+                                    <td class="py-4 px-4 text-center">10%</td>
+                                    <td class="py-4 px-4 text-right text-on-surface-variant">-$@item.PlatformRevenue.ToString("N0")</td>
+                                    <td class="py-4 px-4 text-right text-on-surface-variant">$@item.AdjustAmount.ToString("N0")</td>
+                                    <td class="py-4 px-4 text-right font-bold text-primary">$@item.SellerPayout.ToString("N0")</td>
+                                    <td class="py-4 px-4 text-center text-on-surface-variant">
+                                        @(item.RemitDate.HasValue ? item.RemitDate.Value.ToString("yyyy/MM/dd") : "-")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="py-8 text-center text-on-surface-variant">
+                                    目前尚無對帳資料
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex items-center justify-between">
+                <span class="text-sm text-on-surface-variant">顯示 1 至 @(Model?.Count() ?? 0) 筆，共 @(Model?.Count() ?? 0) 筆</span>
+                <div class="flex items-center gap-1">
+                    <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50" disabled>
+                        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+                    <button class="w-8 h-8 rounded flex items-center justify-center bg-primary text-on-primary font-bold text-xs">1</button>
+                    <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50" disabled>
+                        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 切換 Tab 的 JS 邏輯 -->
+    <script>
+        function filterByStatus(statusName) {
+        document.getElementById('statusInput').value = statusName;
+        document.getElementById('searchForm').submit();
+        }
+    </script>
+</div>
