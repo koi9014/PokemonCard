@@ -7,6 +7,8 @@ body {
   overscroll-behavior: none;
 }
 
+
+
 @media (max-width: 991.98px) {
   .seller-member-main {
     width: 100%;

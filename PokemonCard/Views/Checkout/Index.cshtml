@@ -1,0 +1,420 @@
+﻿
+<link rel="stylesheet" href="~/css/CheckOut.css">
+
+
+<div class="container-fluid px-4 py-3 checkout-page">
+
+    <!-- ==========================
+         ① 購物車商品
+    =========================== -->
+    <div class="checkout-card">
+
+        <div class="card-title">
+            購物車 <span>(1 件)</span>
+        </div>
+
+        <!-- 優惠提示 -->
+        <div class="cart-notice">
+            <div>
+                再買 <strong>NT$2,721</strong>，即可享
+                <span>免運優惠</span>
+            </div>
+
+            <small>
+                滿 NT$3,000 就免運！常溫商品輕鬆到家
+            </small>
+        </div>
+
+
+        <!-- 商品標題 -->
+        <div class="product-header">
+            <div>商品資料</div>
+            <div>商品單價</div>
+            <div>數量</div>
+            <div>商品小計</div>
+        </div>
+
+
+        <!-- 商品 -->
+        <div class="cart-product">
+
+            <!-- 商品資訊 -->
+            <div class="product-info">
+
+                <img src="https://placehold.co/90x90/f7e7d5/555?text=商品"
+                     alt="商品">
+
+                <div>
+                    <div class="product-name">
+                        愛不囉嗦｜鳳爪飛舞綜合蝴蝶酥禮盒
+                    </div>
+
+                    <div class="product-shipping">
+                        <i class="bi bi-info-circle"></i>
+                        預購商品 2026/09/11 開始出貨
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- 單價 -->
+            <div class="product-price">
+                <span class="mobile-label">商品單價</span>
+                NT$279
+            </div>
+
+
+            <!-- 數量 -->
+            <div class="product-quantity">
+
+                <span class="mobile-label">數量</span>
+
+                <div class="quantity-box">
+
+                    <button type="button">−</button>
+
+                    <input type="text"
+                           value="1">
+
+                    <button type="button">＋</button>
+
+                </div>
+
+                <small>
+                    購買數量包含預購 × <b>1</b>
+                </small>
+
+            </div>
+
+
+            <!-- 小計 -->
+            <div class="product-subtotal">
+
+                <span class="mobile-label">
+                    商品小計
+                </span>
+
+                NT$279
+
+                <button class="delete-btn">
+                    <i class="bi bi-trash"></i>
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- 優惠 -->
+        <div class="cart-discount">
+
+            <div class="discount-title">
+                優惠
+            </div>
+
+            <div class="discount-content">
+
+                <span class="discount-tag">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    再買 NT$49,721
+                </span>
+
+                <span>
+                    指定商品滿額優惠 5 箱享 95 折
+                    <small>
+                        （單件單品優惠不參與活動）
+                    </small>
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================
+         ② 填寫資料
+    =========================== -->
+    <div class="checkout-card customer-card">
+
+        <div class="card-title">
+            填寫資料
+        </div>
+
+
+        <div class="form-content">
+
+            <!-- ==================
+                 聯絡資訊
+            =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    聯絡資訊
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            姓名 <span>*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               placeholder="請輸入姓名">
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            手機號碼 <span>*</span>
+                        </label>
+
+                        <input type="tel"
+                               class="form-control"
+                               placeholder="請輸入手機號碼">
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Email <span>*</span>
+                        </label>
+
+                        <input type="email"
+                               class="form-control"
+                               placeholder="請輸入 Email">
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            國家／地區 <span>*</span>
+                        </label>
+
+                        <select class="form-select">
+                            <option>台灣</option>
+                            <option>日本</option>
+                            <option>香港</option>
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================
+                 配送資訊
+            =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    配送資訊
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            送貨方式 <span>*</span>
+                        </label>
+
+                        <select class="form-select">
+                            <option>宅配</option>
+                            <option>超商取貨</option>
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            郵遞區號
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               placeholder="請輸入郵遞區號">
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            縣市 <span>*</span>
+                        </label>
+
+                        <select class="form-select">
+                            <option>請選擇縣市</option>
+                            <option>台北市</option>
+                            <option>新北市</option>
+                            <option>桃園市</option>
+                            <option>台中市</option>
+                            <option>台南市</option>
+                            <option>高雄市</option>
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            區域 <span>*</span>
+                        </label>
+
+                        <select class="form-select">
+                            <option>請選擇區域</option>
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            地址 <span>*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               placeholder="請輸入詳細地址">
+
+                    </div>
+
+                </div>
+
+
+                <div class="shipping-note">
+
+                    <i class="bi bi-info-circle"></i>
+
+                    點選「前往結帳」後，即可於下一頁選擇希望的到貨日期。
+
+                    <br>
+
+                    <span>
+                        未指定到貨日：將於 3–5 個工作天內出貨
+                    </span>
+
+                </div>
+
+            </div>
+            <!-- ==================
+                 付款方式
+            =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    付款方式
+                </div>
+
+                <div class="payment-option">
+
+                    <div>
+
+                        <div class="payment-name">
+                            <i class="bi bi-credit-card"></i>
+
+                            信用卡
+                        </div>
+
+                        <small>
+                            VISA / Master / JCB
+                        </small>
+
+                    </div>
+
+                    <div class="payment-radio">
+                        <input type="radio"
+                               name="payment"
+                               checked>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================
+                 訂單備註
+            =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    訂單備註
+                </div>
+
+                <textarea class="form-control"
+                          rows="4"
+                          placeholder="有其他需求可以在這裡留言"></textarea>
+
+            </div>
+
+
+            <!-- ==================
+                 金額
+            =================== -->
+            <div class="order-summary">
+
+                <div class="summary-row">
+                    <span>商品小計</span>
+                    <span>NT$279</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>運費</span>
+                    <span>NT$60</span>
+                </div>
+
+                <div class="summary-row discount">
+                    <span>優惠折扣</span>
+                    <span>- NT$0</span>
+                </div>
+
+                <hr>
+
+                <div class="total-row">
+
+                    <span>
+                        應付金額
+                    </span>
+
+                    <strong>
+                        NT$339
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- 結帳 -->
+            <div class="checkout-action">
+
+                <button class="checkout-btn">
+                    前往結帳
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,4 +1,5 @@
-﻿@model List<SellerApplication>
+﻿@using System.Text.Json
+@model List<SellerApplication>
 
 @{
     ViewData["Title"] = "賣家資格 / 信用審核列表";
@@ -10,6 +11,15 @@
     var pendingCount = Convert.ToInt32(ViewBag.PendingCount ?? 0);
     var rejectedCount = Convert.ToInt32(ViewBag.RejectedCount ?? 0);
     var approvedCount = Convert.ToInt32(ViewBag.ApprovedCount ?? 0);
+    @* ===== [賣家資格統計圖表新增開始] 取得圖表篩選條件與後端統計資料 ===== *@
+    var chartRange = ViewBag.ChartRange as string ?? "month";
+    var chartStart = ViewBag.ChartStart as string ?? string.Empty;
+    var chartEnd = ViewBag.ChartEnd as string ?? string.Empty;
+    var approvedSellerCount = Convert.ToInt32(ViewBag.ApprovedSellerCount ?? 0);
+    var approvalChartUnit = ViewBag.ApprovalChartUnit as string ?? "日期";
+    var approvalChartLabels = ViewBag.ApprovalChartLabels as List<string> ?? new List<string>();
+    var approvalChartValues = ViewBag.ApprovalChartValues as List<int> ?? new List<int>();
+    @* ===== [賣家資格統計圖表新增結束] ===== *@
 }
 
 @functions {
@@ -37,12 +47,12 @@
 
     private static string GetActionText(string status)
     {
-        return status == "APPROVED" ? "檢視明細" : "審核";
+        return status == "PENDING" ? "審核" : "檢視明細";
     }
 
     private static string GetActionClass(string status)
     {
-        return status == "APPROVED" ? "btn-secondary" : "btn-danger";
+        return status == "PENDING" ? "btn-danger" : "btn-secondary";
     }
 
     private static string GetReviewItem(SellerApplication application)
@@ -236,6 +246,22 @@
 <div class="seller-audit-page">
     <h1 class="seller-audit-title h3 mb-4">【賣家資格/信用審核列表】</h1>
 
+    @if (TempData["SellerAuditMessage"] is string successMessage)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+        </div>
+    }
+
+    @if (TempData["SellerAuditError"] is string errorMessage)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+        </div>
+    }
+
     <div class="row g-3 align-items-center mb-3">
         <div class="col-lg-3">
             <form asp-controller="Admin" asp-action="SellerAudit" method="get">
@@ -312,6 +338,40 @@
             </table>
         </div>
     </div>
+
+    @* ===== [賣家資格統計圖表新增開始] 日期篩選、通過人數與柱狀圖 ===== *@
+    <section class="audit-table-card p-4 mt-4" aria-labelledby="sellerApprovalChartTitle">
+        <div class="mb-3">
+            <div>
+                <h2 id="sellerApprovalChartTitle" class="h4 fw-bold mb-1">取得賣家資格人數</h2>
+                <div class="text-secondary">期間內審核通過的申請數：<strong class="text-dark">@approvedSellerCount 人</strong></div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+            <span class="fw-semibold text-secondary">篩選器：</span>
+            <a asp-controller="Admin" asp-action="SellerAudit" asp-fragment="sellerApprovalChartTitle" asp-route-keyword="@keyword" asp-route-status="@status" asp-route-chartRange="month" class="btn btn-sm @(chartRange == "month" ? "btn-primary" : "btn-outline-primary")">本月</a>
+            <a asp-controller="Admin" asp-action="SellerAudit" asp-fragment="sellerApprovalChartTitle" asp-route-keyword="@keyword" asp-route-status="@status" asp-route-chartRange="year" class="btn btn-sm @(chartRange == "year" ? "btn-primary" : "btn-outline-primary")">今年</a>
+
+            <form action="@($"{Url.Action("SellerAudit", "Admin")}#sellerApprovalChartTitle")" method="get" class="d-flex flex-nowrap align-items-center gap-2">
+                <input type="hidden" name="keyword" value="@keyword" />
+                <input type="hidden" name="status" value="@status" />
+                <input type="hidden" name="chartRange" value="custom" />
+                <label class="visually-hidden" for="chartStart">開始日期</label>
+                <input id="chartStart" type="date" name="chartStart" value="@chartStart" class="form-control form-control-sm" style="width: 150px;" />
+                <span class="text-secondary">至</span>
+                <label class="visually-hidden" for="chartEnd">結束日期</label>
+                <input id="chartEnd" type="date" name="chartEnd" value="@chartEnd" class="form-control form-control-sm" style="width: 150px;" />
+                <button type="submit" class="btn btn-sm btn-outline-secondary">套用期間</button>
+            </form>
+        </div>
+
+        <div class="position-relative" style="height: 320px;">
+            <canvas id="sellerApprovalChart" aria-label="期間取得賣家資格人數柱狀圖" role="img"></canvas>
+        </div>
+        <div class="text-secondary small mt-2">橫軸：@approvalChartUnit；縱軸：審核通過人數。</div>
+    </section>
+    @* ===== [賣家資格統計圖表新增結束] ===== *@
 
     @foreach (var item in Model)
     {
@@ -409,16 +469,67 @@
                             </div>
                         </div>
 
-                        <label for="@($"{modalId}Note")" class="form-label text-secondary fw-semibold">審核備註 / 退回理由</label>
-                        <textarea id="@($"{modalId}Note")" class="form-control audit-note mb-4" placeholder="若點擊「退回補件」，請在此輸入退回原因（例如：證件圖片模糊，請補傳清晰版本...）"></textarea>
+                        @if (item.SellerStatus == "PENDING")
+                        {
+                            <form asp-controller="Admin" asp-action="RejectSellerApplication" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="applicationId" value="@item.ApplicationId" />
 
-                        <div class="d-flex flex-column flex-md-row justify-content-center gap-4">
-                            <button type="button" class="btn btn-danger audit-action-btn" data-bs-dismiss="modal">退回補件</button>
-                            <button type="button" class="btn btn-success audit-action-btn" data-bs-dismiss="modal">通過審核</button>
-                        </div>
+                                <label for="@($"{modalId}Note")" class="form-label text-secondary fw-semibold">審核備註 / 退回理由</label>
+                                <textarea id="@($"{modalId}Note")" name="auditNote" class="form-control audit-note mb-4" placeholder="若點擊「退回補件」，請在此輸入退回原因（例如：證件圖片模糊，請補傳清晰版本...）"></textarea>
+
+                                <div class="d-flex flex-column flex-md-row justify-content-center gap-4">
+                                    <button type="submit" class="btn btn-danger audit-action-btn">退回補件</button>
+                                    <button type="submit" class="btn btn-success audit-action-btn" formaction="@Url.Action("ApproveSellerApplication", "Admin")">通過審核</button>
+                                </div>
+                            </form>
+                        }
                     </div>
                 </div>
             </div>
         </div>
     }
 </div>
+
+@* ===== [賣家資格統計圖表新增開始] 載入 Chart.js 並建立通過人數柱狀圖 ===== *@
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    const sellerApprovalCanvas = document.getElementById("sellerApprovalChart");
+
+    if (sellerApprovalCanvas) {
+        new Chart(sellerApprovalCanvas, {
+            type: "bar",
+            data: {
+                labels: @Html.Raw(JsonSerializer.Serialize(approvalChartLabels)),
+                datasets: [{
+                    label: "審核通過人數",
+                    data: @Html.Raw(JsonSerializer.Serialize(approvalChartValues)),
+                    backgroundColor: "rgba(25, 135, 84, 0.7)",
+                    borderColor: "rgb(25, 135, 84)",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        align: "start"
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        title: { display: true, text: "人數" }
+                    },
+                    x: {
+                        title: { display: true, text: @Html.Raw(JsonSerializer.Serialize(approvalChartUnit)) }
+                    }
+                }
+            }
+        });
+    }
+</script>
+@* ===== [賣家資格統計圖表新增結束] ===== *@
