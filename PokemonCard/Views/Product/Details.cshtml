@@ -135,21 +135,22 @@
 
                 @foreach(var item in Model.ProductSpecs)
                 {
-                    <button type="button"
-                            class="product-option @(item == Model.ProductSpecs.FirstOrDefault( ) ? "active" : "")"
-                            data-price="@item.SpecsPrice"
-                            data-stock="@item.Stock"
-                            data-option="收藏版">
+<button type="button"
+        class="product-option @(item == Model.ProductSpecs.FirstOrDefault() ? "active" : "")"
+        data-price="@item.SpecsPrice"
+        data-stock="@item.Stock"
+        data-specification-id="@item.SpecificationId">
 
-                        <span class="option-name">
-                            @item.SpecsCategory1
-                        </span>
+    <span class="option-name">
+        @item.SpecsCategory1
+    </span>
 
-                        <span class="option-price">
-                            NT$ @item.SpecsPrice
-                        </span>
+    <span class="option-price">
+        NT$ @item.SpecsPrice
+    </span>
 
-                    </button>
+</button>
+
                 }
                
             </div>
@@ -231,14 +232,33 @@
 
 
                 <div class="col-6">
+                    <form asp-controller="Checkout"
+                          asp-action="Index"
+                          method="get">
 
-                    <button type="button"
-                            class="btn btn-buy w-100 py-2">
+                        <!-- 商品 ID -->
+                        <input type="hidden"
+                               name="productId"
+                               value="@Model.ProductId" />
 
-                        直接購買
+                        <!-- 規格 ID -->
+                        <input type="hidden"
+                               id="specificationId"
+                               name="specificationId"
+                               value="@Model.ProductSpecs.FirstOrDefault( )?.SpecificationId" />
 
-                    </button>
+                        <!-- 購買數量 -->
+                        <input type="hidden"
+                               id="checkoutQuantity"
+                               name="quantity"
+                               value="1" />
 
+                        <button type="submit"
+                                class="btn btn-buy w-100 py-2">
+                            立即購買
+                        </button>
+
+                    </form>
                 </div>
 
             </div>
@@ -615,33 +635,67 @@
 
         button.addEventListener("click", function () {
 
+            // 移除其他規格 active
             document.querySelectorAll(".product-option")
                 .forEach(function (btn) {
                     btn.classList.remove("active");
                 });
 
+            // 設定目前規格
             this.classList.add("active");
 
+            // 取得規格資料
+            const price = parseInt(this.dataset.price) || 0;
             const stock = parseInt(this.dataset.stock) || 0;
+            const specificationId =
+                this.dataset.specificationId;
 
-            const quantity = document.getElementById("quantity");
+            // 更新價格
+            document.getElementById("productPrice")
+                .textContent =
+                "NT$ " + price.toLocaleString();
+
+            // 更新數量最大值
+            const quantity =
+                document.getElementById("quantity");
 
             quantity.max = stock;
+
             quantity.value = stock > 0 ? 1 : 0;
+
+            // 更新要送到 Checkout 的規格 ID
+            document.getElementById("specificationId")
+                .value = specificationId;
+
+            // 更新要送到 Checkout 的數量
+            document.getElementById("checkoutQuantity")
+                .value = quantity.value;
+
         });
+
     });
 
 
     // 增加數量
     function increaseQuantity() {
 
-        const input = document.getElementById("quantity");
+        const input =
+            document.getElementById("quantity");
 
-        const current = parseInt(input.value) || 1;
-        const max = parseInt(input.max) || 1;
+        let current =
+            parseInt(input.value) || 1;
+
+        const max =
+            parseInt(input.max) || 1;
 
         if (current < max) {
-            input.value = current + 1;
+
+            current++;
+
+            input.value = current;
+
+            document.getElementById("checkoutQuantity")
+                .value = current;
         }
     }
 
@@ -649,13 +703,23 @@
     // 減少數量
     function decreaseQuantity() {
 
-        const input = document.getElementById("quantity");
+        const input =
+            document.getElementById("quantity");
 
-        const current = parseInt(input.value) || 1;
-        const min = parseInt(input.min) || 1;
+        let current =
+            parseInt(input.value) || 1;
+
+        const min =
+            parseInt(input.min) || 1;
 
         if (current > min) {
-            input.value = current - 1;
+
+            current--;
+
+            input.value = current;
+
+            document.getElementById("checkoutQuantity")
+                .value = current;
         }
     }
 
