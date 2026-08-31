@@ -523,6 +523,9 @@ public partial class PicartchuContext : DbContext
             entity.Property(e => e.SpecificationId)
                 .HasComment("規格編號")
                 .HasColumnName("Specification_ID");
+            entity.Property(e => e.Deposit)
+                .HasComment("訂金金額")
+                .HasColumnName("Deposit");
             entity.Property(e => e.PreSale)
                 .HasComment("是否預售")
                 .HasColumnName("Pre_Sale");

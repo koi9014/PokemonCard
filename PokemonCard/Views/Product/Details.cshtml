@@ -367,11 +367,12 @@
 
             <div class="col-md-auto mt-3 mt-md-0">
 
-                <button class="btn btn-outline-warning">
-
+                <a asp-controller="Seller"
+                   asp-action="MyStore"
+                   asp-route-sellerId="@Model.Seller.UserId"
+                   class="btn btn-outline-warning">
                     查看賣家商品
-
-                </button>
+                </a>
 
             </div>
 

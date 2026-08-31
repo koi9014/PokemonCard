@@ -24,16 +24,14 @@
             }
         }
     </script>
-<div class="min-h-screen bg-[#F3F9FE] font-sans text-[#26323D]">
+<div class="min-h-screen bg-[#F3F9FE] font-['Inter'] font-medium text-[#26323D]">
     <main class="mx-auto max-w-[1440px] px-8 py-7">
         <section class="mx-auto max-w-[1320px]">
-            <div class="mb-5 flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <a href="@Url.Action("MemberCenter", "MyAccount")" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">←</a>
+            
+                <div class="flex w-full items-center gap-4 px-margin-mobile pt-margin-desktop md:px-margin-desktop">
                     <h1 class="text-2xl font-bold">商品管理</h1>
                 </div>
-                <a href="@Url.Action("AddProduct", "Seller")" class="rounded-md bg-brand px-6 py-3 font-bold text-white shadow-sm">＋ 新增商品</a>
-            </div>
+          
 
             @if (TempData["SuccessMessage"] is string successMessage)
             {
@@ -45,40 +43,45 @@
             }
 
             <div class="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
-                <form id="filter-form" method="get" action="@Url.Action("ProductManage", "Seller")" class="flex flex-wrap items-center gap-5 border-b border-line px-7 py-5">
-                    <label class="flex items-center gap-3 text-sm font-semibold">
-                        分類:
-                        <select name="productType" class="h-9 rounded border border-[#AAB9C6] bg-white px-3 font-normal" onchange="this.form.submit()">
-                            <option value="" selected="@(string.IsNullOrWhiteSpace(Model.ProductType))">全部</option>
-                            @foreach (var type in new[] { "絨毛娃娃", "模型與公仔", "集換式卡牌", "生活與家居", "服飾與配件", "文具與辦公用品", "電玩周邊", "3C配件", "其他" })
-                            {
-                                <option value="@type" selected="@(Model.ProductType == type)">@type</option>
-                            }
-                        </select>
-                    </label>
-                    <label class="flex items-center gap-3 text-sm font-semibold">
-                        狀態:
-                        <select name="status" class="h-9 rounded border border-[#AAB9C6] bg-white px-3 font-normal" onchange="this.form.submit()">
-                            <option value="" selected="@(string.IsNullOrWhiteSpace(Model.Status))">全部</option>
-                            <option value="PUBLISHED" selected="@(Model.Status == "PUBLISHED")">上架中</option>
-                            <option value="DRAFT" selected="@(Model.Status == "DRAFT")">已下架</option>
-                        </select>
-                    </label>
-                    <div class="flex items-center">
-                        <input name="search" value="@Model.Search" class="h-9 w-72 rounded-l border border-[#D7BFC1] bg-[#F8FBFD] px-4 text-sm outline-none" placeholder="搜尋商品名稱或關鍵字..." />
-                        <button type="submit" class="h-9 rounded-r border border-brand bg-brand px-4 text-sm font-semibold text-white">搜尋</button>
+                <form id="filter-form" method="get" action="@Url.Action("ProductManage", "Seller")" class="border-b border-line px-7 py-5">
+                    <div class="flex flex-wrap items-center gap-5">
+                        <label class="flex items-center gap-3 text-sm font-semibold">
+                            分類:
+                            <select name="productType" class="h-9 rounded border border-[#AAB9C6] bg-white px-3 font-normal" onchange="this.form.submit()">
+                                <option value="" selected="@(string.IsNullOrWhiteSpace(Model.ProductType))">全部</option>
+                                @foreach (var type in new[] { "絨毛娃娃", "模型與公仔", "集換式卡牌", "生活與家居", "服飾與配件", "文具與辦公用品", "電玩周邊", "3C配件", "其他" })
+                                {
+                                    <option value="@type" selected="@(Model.ProductType == type)">@type</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="flex items-center gap-3 text-sm font-semibold">
+                            狀態:
+                            <select name="status" class="h-9 rounded border border-[#AAB9C6] bg-white px-3 font-normal" onchange="this.form.submit()">
+                                <option value="" selected="@(string.IsNullOrWhiteSpace(Model.Status))">全部</option>
+                                <option value="PUBLISHED" selected="@(Model.Status == "PUBLISHED")">上架中</option>
+                                <option value="DRAFT" selected="@(Model.Status == "DRAFT")">已下架</option>
+                            </select>
+                        </label>
+                        <a href="@Url.Action("AddProduct", "Seller")" class="ml-auto rounded-md bg-brand px-4 py-2 text-sm font-bold text-white no-underline shadow-sm">＋ 新增商品</a>
                     </div>
-                    <input type="hidden" name="page" value="1" />
-                    <div class="ml-auto flex gap-3">
-                        <button type="button" id="publish-selected" class="rounded border border-[#AAB9C6] px-4 py-2 text-sm text-[#687783]">批量上架</button>
-                        <button type="button" id="draft-selected" class="rounded border border-[#AAB9C6] px-4 py-2 text-sm text-[#687783]">批量下架</button>
-                        <button type="button" id="delete-selected" class="rounded border border-[#EFAAAA] px-4 py-2 text-sm text-brand">刪除</button>
+                    <div class="mt-4 flex flex-wrap items-center gap-5">
+                        <div class="flex items-center">
+                            <input name="search" value="@Model.Search" class="h-9 w-72 rounded-l border border-[#D7BFC1] bg-[#F8FBFD] px-4 text-sm outline-none" placeholder="搜尋商品名稱或關鍵字..." />
+                            <button type="submit" class="h-9 rounded-r border border-brand bg-brand px-4 text-sm font-semibold text-white">搜尋</button>
+                        </div>
+                        <input type="hidden" name="page" value="1" />
+                        <div class="ml-auto flex gap-3">
+                            <button type="button" id="publish-selected" class="rounded border border-[#AAB9C6] px-4 py-2 text-sm text-[#687783]">批量上架</button>
+                            <button type="button" id="draft-selected" class="rounded border border-[#AAB9C6] px-4 py-2 text-sm text-[#687783]">批量下架</button>
+                            <button type="button" id="delete-selected" class="rounded border border-[#EFAAAA] px-4 py-2 text-sm text-brand">刪除</button>
+                        </div>
                     </div>
                 </form>
 
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[1000px] text-left text-sm">
-                        <thead class="bg-tablehead text-[#4E5B65]">
+                        <thead class="bg-tablehead font-semibold text-[#4E5B65]">
                             <tr>
                                 <th class="w-12 px-6 py-4"><input id="select-all" type="checkbox" class="h-4 w-4" /></th>
                                 <th class="w-24 px-4 py-4">圖片</th>

@@ -33,6 +33,8 @@ public partial class ProductSpec
     /// </summary>
     public int SpecsPrice { get; set; }
 
+    public int? Deposit { get; set; }
+
     /// <summary>
     /// 庫存數量
     /// </summary>

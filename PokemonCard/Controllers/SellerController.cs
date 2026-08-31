@@ -28,6 +28,8 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             .FirstOrDefaultAsync();
     }
 
+    private static bool IsOrderActionable(string status) => status is not ("SHIPPED" or "COMPLETED" or "CANCELLED");
+
     [HttpGet]
     public async Task<IActionResult> SellerHomepage(DateTime? startDate, DateTime? endDate)
     {
@@ -98,7 +100,311 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         return View(model);
     }
 
-    public IActionResult OrderManage() => View();
+    [HttpGet]
+    public async Task<IActionResult> OrderManage(string? search, string? status, int page = 1)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var orders = context.Orders
+            .AsNoTracking()
+            .Where(order => order.SellerId == sellerId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var keyword = search.Trim();
+            var pattern = $"%{keyword}%";
+            orders = orders.Where(order =>
+                EF.Functions.Like(order.OrderNo, pattern)
+                || EF.Functions.Like(order.Buyer.Username ?? string.Empty, pattern)
+                || EF.Functions.Like(order.Buyer.Phone ?? string.Empty, pattern)
+                || EF.Functions.Like(order.Buyer.DisplayName ?? string.Empty, pattern));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            orders = status == "PROCESSING"
+                ? orders.Where(order => order.OrderStatus == "PROCESSING" || order.OrderStatus == "Processing")
+                : orders.Where(order => order.OrderStatus == status);
+        }
+
+        const int pageSize = 10;
+        var totalCount = await orders.CountAsync();
+        page = Math.Clamp(page, 1, Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize)));
+
+        var model = new SellerOrderManageViewModel
+        {
+            Search = search,
+            Status = status,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Items = await orders
+                .OrderByDescending(order => order.OrderedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(order => new SellerOrderListItem
+                {
+                    OrderId = order.OrderId,
+                    OrderNo = order.OrderNo,
+                    Username = order.Buyer.Username ?? "-",
+                    OrderAmount = order.OrderAmount,
+                    OrderStatus = order.OrderStatus,
+                    OrderedAt = order.OrderedAt
+                })
+                .ToListAsync()
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ShipOrders(List<int>? selectedOrderIds)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        if (selectedOrderIds is not { Count: > 0 })
+        {
+            TempData["ErrorMessage"] = "請至少勾選一筆訂單。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var orders = await context.Orders
+            .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
+            .ToListAsync();
+        if (orders.Any(order => !IsOrderActionable(order.OrderStatus)))
+        {
+            TempData["ErrorMessage"] = "已完成、已出貨或已取消的訂單不可執行出貨。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+        foreach (var order in orders)
+        {
+            order.OrderStatus = "SHIPPED";
+            order.OrderUpdatedAt = DateTime.Now;
+        }
+
+        await context.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"已將 {orders.Count} 筆訂單更新為已出貨。";
+        return RedirectToAction(nameof(OrderManage));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MergeOrders(List<int>? selectedOrderIds)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        if (selectedOrderIds is not { Count: > 1 })
+        {
+            TempData["ErrorMessage"] = "請至少勾選兩筆訂單後再合併。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var orders = await context.Orders
+            .Include(order => order.OrderItems)
+            .Include(order => order.OrderHistories)
+            .Include(order => order.Payments)
+            .Include(order => order.Logistic)
+            .Include(order => order.MoneyReconciliation)
+            .Include(order => order.Reviews)
+            .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
+            .OrderBy(order => order.OrderedAt)
+            .ToListAsync();
+
+        if (orders.Count != selectedOrderIds.Distinct().Count())
+        {
+            TempData["ErrorMessage"] = "選取的訂單資料不存在或不屬於目前賣家。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var target = orders[0];
+        var sources = orders.Skip(1).ToList();
+        if (orders.Any(order => !IsOrderActionable(order.OrderStatus)))
+        {
+            TempData["ErrorMessage"] = "已完成、已出貨或已取消的訂單不可合併。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+        if (orders.Any(order => order.BuyerId != target.BuyerId
+            || order.ReceiverPhone != target.ReceiverPhone
+            || order.ShippingAddress != target.ShippingAddress))
+        {
+            TempData["ErrorMessage"] = "僅能合併同一買家且收件資訊相同的訂單。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        if (orders.Any(order => order.Logistic is not null || order.MoneyReconciliation is not null || order.Reviews.Any()))
+        {
+            TempData["ErrorMessage"] = "已建立物流、對帳或評價紀錄的訂單不可合併。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        foreach (var source in sources)
+        {
+            foreach (var item in source.OrderItems) item.OrderId = target.OrderId;
+            foreach (var history in source.OrderHistories) history.OrderNo = target.OrderNo;
+            foreach (var payment in source.Payments) payment.OrderId = target.OrderId;
+            target.OrderAmount += source.OrderAmount;
+            target.OrderDeposit += source.OrderDeposit;
+            context.Orders.Remove(source);
+        }
+
+        target.OrderUpdatedAt = DateTime.Now;
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        TempData["SuccessMessage"] = $"訂單已合併至 {target.OrderNo}。";
+        return RedirectToAction(nameof(OrderManage));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> MyStore(int? sellerId, string? productType)
+    {
+        sellerId ??= await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return NotFound();
+
+        var seller = await context.Sellers
+            .AsNoTracking()
+            .Include(item => item.User)
+            .SingleOrDefaultAsync(item => item.UserId == sellerId.Value);
+        if (seller is null) return NotFound();
+
+        var now = DateTime.Now;
+        var publishedProducts = context.Products
+            .AsNoTracking()
+            .Include(product => product.ProductImages)
+            .Include(product => product.ProductSpecs)
+            .Where(product => product.UserId == sellerId.Value
+                && product.ProductStatus == "PUBLISHED"
+                && (!product.PublishedAt.HasValue || product.PublishedAt <= now));
+
+        var categories = await publishedProducts
+            .Where(product => !string.IsNullOrWhiteSpace(product.ProductType))
+            .Select(product => product.ProductType!)
+            .Distinct()
+            .OrderBy(type => type)
+            .ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(productType))
+            publishedProducts = publishedProducts.Where(product => product.ProductType == productType);
+
+        var products = await publishedProducts
+            .OrderByDescending(product => product.PublishedAt ?? product.CreatedAt)
+            .ToListAsync();
+
+        var reviews = context.Reviews.AsNoTracking().Where(review => review.RevieweeId == sellerId.Value);
+        var reviewCount = await reviews.CountAsync();
+        var averageRating = reviewCount == 0 ? 0 : await reviews.AverageAsync(review => (double)review.Rating);
+        var reviewItems = await reviews
+            .OrderByDescending(review => review.ReviewCreatedAt)
+            .Select(review => new SellerStoreReviewItem
+            {
+                ReviewerName = review.Reviewer.DisplayName ?? review.Reviewer.Username ?? "匿名買家",
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.ReviewCreatedAt
+            })
+            .ToListAsync();
+
+        return View(new SellerStoreViewModel
+        {
+            Seller = seller,
+            Products = products,
+            Categories = categories,
+            ProductType = productType,
+            ReviewCount = reviewCount,
+            AverageRating = averageRating,
+            Reviews = reviewItems
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> StoreSetting()
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var seller = await context.Sellers
+            .AsNoTracking()
+            .Include(item => item.User)
+            .SingleOrDefaultAsync(item => item.UserId == sellerId.Value);
+        if (seller is null) return NotFound();
+
+        return View(new StoreSettingInput
+        {
+            StoreName = seller.StoreName,
+            StoreDescription = seller.StoreDescription,
+            AvatarUrl = seller.User.Avatar
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> StoreSetting(StoreSettingInput input)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var seller = await context.Sellers
+            .Include(item => item.User)
+            .SingleOrDefaultAsync(item => item.UserId == sellerId.Value);
+        if (seller is null) return NotFound();
+
+        input.AvatarUrl = seller.User.Avatar;
+        var storeName = input.StoreName?.Trim();
+        var storeDescription = input.StoreDescription?.Trim();
+        if (string.IsNullOrWhiteSpace(storeName))
+            ModelState.AddModelError(nameof(input.StoreName), "請輸入賣場名稱。 ");
+        if (storeName?.Length > 50)
+            ModelState.AddModelError(nameof(input.StoreName), "賣場名稱最多 50 字。 ");
+        if (storeDescription?.Length > 100)
+            ModelState.AddModelError(nameof(input.StoreDescription), "賣場介紹最多 100 字。 ");
+        if (input.Avatar is { Length: > 0 }
+            && (input.Avatar.Length > 5 * 1024 * 1024
+                || !new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(Path.GetExtension(input.Avatar.FileName).ToLowerInvariant())))
+            ModelState.AddModelError(nameof(input.Avatar), "頭像僅限 JPG、PNG、WEBP，且檔案不得超過 5 MB。 ");
+
+        if (!ModelState.IsValid) return View(input);
+
+        var changed = false;
+        if (!string.Equals(seller.StoreName, storeName, StringComparison.Ordinal))
+        {
+            seller.StoreName = storeName!;
+            changed = true;
+        }
+        if (!string.Equals(seller.StoreDescription, storeDescription, StringComparison.Ordinal))
+        {
+            seller.StoreDescription = storeDescription;
+            changed = true;
+        }
+        if (input.Avatar is { Length: > 0 })
+        {
+            var extension = Path.GetExtension(input.Avatar.FileName).ToLowerInvariant();
+            var fileName = $"seller_{sellerId.Value}_{Guid.NewGuid():N}{extension}";
+            var directory = Path.Combine(environment.WebRootPath, "images", "avatar");
+            Directory.CreateDirectory(directory);
+            var filePath = Path.Combine(directory, fileName);
+            await using var stream = System.IO.File.Create(filePath);
+            await input.Avatar.CopyToAsync(stream);
+            seller.User.Avatar = $"/images/avatar/{fileName}";
+            changed = true;
+        }
+
+        if (changed)
+        {
+            var now = DateTime.Now;
+            seller.StoreUpdatedAt = now;
+            seller.User.UserUpdatedAt = now;
+            await context.SaveChangesAsync();
+            TempData["StoreSettingSuccess"] = "賣場資料已更新。";
+        }
+        else
+        {
+            TempData["StoreSettingInfo"] = "沒有需要更新的資料。";
+        }
+
+        return RedirectToAction(nameof(StoreSetting));
+    }
 
     [HttpGet]
     public async Task<IActionResult> ProductManage(string? productType, string? status, string? search, int page = 1)
@@ -191,7 +497,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         if (!id.HasValue) return View(new AddProductInput());
         var product = await context.Products.Include(item => item.ProductImages).Include(item => item.ProductSpecs).SingleOrDefaultAsync(item => item.ProductId == id && item.UserId == sellerId.Value);
         if (product == null) return NotFound();
-        return View(new AddProductInput { ProductId = product.ProductId, ProductName = product.ProductName, Description = product.Description, Location = product.Location, ProductType = product.ProductType, ProductStatus = product.ProductStatus ?? "DRAFT", SaleType = product.ProductSpecs.FirstOrDefault()?.PreSale == true ? "preorder" : "instock", ExistingImages = product.ProductImages.OrderBy(image => image.ImageOrder).Select(image => image.ImageUrl).ToList(), Specs = product.ProductSpecs.Select(spec => new ProductSpecInput { Category = spec.SpecsCategory2 ?? "", Option = spec.SpecsCategory1, Price = spec.SpecsPrice, Stock = spec.Stock }).ToList() });
+        return View(new AddProductInput { ProductId = product.ProductId, ProductName = product.ProductName, Description = product.Description, Location = product.Location, ProductType = product.ProductType, ProductStatus = product.ProductStatus ?? "DRAFT", SaleType = product.ProductSpecs.FirstOrDefault()?.PreSale == true ? "preorder" : "instock", ExistingImages = product.ProductImages.OrderBy(image => image.ImageOrder).Select(image => image.ImageUrl).ToList(), Specs = product.ProductSpecs.Select(spec => new ProductSpecInput { Category = spec.SpecsCategory2 ?? "", Option = spec.SpecsCategory1, Price = spec.SpecsPrice, Stock = spec.Stock, Deposit = spec.Deposit }).ToList() });
     }
 
     [HttpPost]
@@ -320,6 +626,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 SpecsCategory1 = spec.Option.Trim(),
                 SpecsCategory2 = string.IsNullOrWhiteSpace(spec.Category) ? null : spec.Category.Trim(),
                 SpecsPrice = spec.Price,
+                Deposit = spec.Deposit,
                 Stock = spec.Stock,
                 SpecsCreatedAt = now,
                 SpecsUpdatedAt = now
@@ -392,8 +699,8 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             ModelState.AddModelError(nameof(input.Images), "照片僅限 JPG、PNG、WEBP，且每張不得超過 5 MB。");
         if (specs.Count == 0)
             ModelState.AddModelError(nameof(input.Specs), "請至少新增一組商品規格。");
-        if (specs.Any(spec => string.IsNullOrWhiteSpace(spec.Option) || spec.Price < 0 || spec.Stock < 0))
-            ModelState.AddModelError(nameof(input.Specs), "請完整填寫規格選項、價格與庫存。");
+        if (specs.Any(spec => string.IsNullOrWhiteSpace(spec.Option) || spec.Price < 0 || spec.Stock < 0 || spec.Deposit < 0))
+            ModelState.AddModelError(nameof(input.Specs), "請完整填寫規格選項、價格、庫存與有效訂金。");
         if (specs.GroupBy(spec => $"{(spec.Category ?? string.Empty).Trim()}\u001f{(spec.Option ?? string.Empty).Trim()}", StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1))
             ModelState.AddModelError(nameof(input.Specs), "同一規格類別不可有重複的商品選項。");
     }
@@ -482,10 +789,59 @@ public class ProductListItem
     public bool IsScheduled { get; set; }
 }
 
+public class SellerOrderManageViewModel
+{
+    public string? Search { get; set; }
+    public string? Status { get; set; }
+    public List<SellerOrderListItem> Items { get; set; } = [];
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+}
+
+public class SellerOrderListItem
+{
+    public int OrderId { get; set; }
+    public string OrderNo { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public int OrderAmount { get; set; }
+    public string OrderStatus { get; set; } = string.Empty;
+    public DateTime OrderedAt { get; set; }
+}
+
+public class SellerStoreViewModel
+{
+    public Seller Seller { get; set; } = null!;
+    public List<Product> Products { get; set; } = [];
+    public List<string> Categories { get; set; } = [];
+    public string? ProductType { get; set; }
+    public int ReviewCount { get; set; }
+    public double AverageRating { get; set; }
+    public List<SellerStoreReviewItem> Reviews { get; set; } = [];
+}
+
+public class SellerStoreReviewItem
+{
+    public string ReviewerName { get; set; } = string.Empty;
+    public int Rating { get; set; }
+    public string? Comment { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class StoreSettingInput
+{
+    public string? StoreName { get; set; }
+    public string? StoreDescription { get; set; }
+    public IFormFile? Avatar { get; set; }
+    public string? AvatarUrl { get; set; }
+}
+
 public class ProductSpecInput
 {
     public string? Category { get; set; }
     public string Option { get; set; } = string.Empty;
     public int Price { get; set; }
+    public int? Deposit { get; set; }
     public int Stock { get; set; }
 }
