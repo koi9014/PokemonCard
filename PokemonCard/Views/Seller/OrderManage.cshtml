@@ -18,7 +18,8 @@
         "CANCELLED" => "bg-red-50 text-red-700",
         _ => "bg-amber-50 text-amber-700"
     };
-    string PageUrl(int page) => Url.Action("OrderManage", new { search = Model.Search, page }) ?? "#";
+    string PageUrl(int page) => Url.Action("OrderManage", new { search = Model.Search, status = Model.Status, page }) ?? "#";
+    var canManageOrders = Model.Status is not ("COMPLETED" or "SHIPPED" or "CANCELLED");
 }
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -38,20 +39,22 @@
             }
 
             <form method="get" action="@Url.Action("OrderManage", "Seller")" class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input type="hidden" name="status" value="@Model.Status" />
                 <div class="relative w-full sm:max-w-md">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#5a413f]">search</span>
                     <input name="search" value="@Model.Search" class="w-full rounded-lg border border-[#e2bebb] bg-[#f8fbfd] py-2 pl-10 pr-4 outline-none focus:border-[#42a5f5]" placeholder="訂單編號、買家帳號、姓名或手機" />
                 </div>
                 <button type="submit" class="rounded-lg border border-[#e2bebb] bg-[#eef5f9] px-5 py-2 font-semibold text-[#0d1e25]">搜尋</button>
+                <a href="@Url.Action("OrderManage", "Seller")" class="rounded-lg border border-[#42a5f5] bg-white px-5 py-2 text-center font-semibold text-[#00609a]">全部訂單</a>
             </form>
 
             <form method="post">
                 @Html.AntiForgeryToken()
                 <div class="mb-4 flex justify-end gap-3">
-                    <button type="submit" formaction="@Url.Action("ShipOrders", "Seller")" class="flex items-center gap-2 rounded-lg bg-[#126d27] px-5 py-2 text-sm font-bold text-white">
+                    <button type="submit" formaction="@Url.Action("ShipOrders", "Seller")" disabled="@(!canManageOrders)" class="flex items-center gap-2 rounded-lg bg-[#126d27] px-5 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
                         <span class="material-symbols-outlined text-[18px]">local_shipping</span>執行出貨
                     </button>
-                    <button type="submit" formaction="@Url.Action("MergeOrders", "Seller")" onclick="return confirm('合併後會保留日期最早的訂單編號，並將其餘訂單明細與金額移入該訂單。確定要合併嗎？');" class="flex items-center gap-2 rounded-lg border border-[#42a5f5] bg-white px-5 py-2 text-sm font-bold text-[#00609a]">
+                    <button type="submit" formaction="@Url.Action("MergeOrders", "Seller")" disabled="@(!canManageOrders)" onclick="return confirm('合併後會保留日期最早的訂單編號，並將其餘訂單明細與金額移入該訂單。確定要合併嗎？');" class="flex items-center gap-2 rounded-lg border border-[#42a5f5] bg-white px-5 py-2 text-sm font-bold text-[#00609a] disabled:cursor-not-allowed disabled:opacity-40">
                         <span class="material-symbols-outlined text-[18px]">call_merge</span>訂單合併
                     </button>
                 </div>

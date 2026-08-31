@@ -24,14 +24,14 @@
             }
         }
     </script>
-<div class="min-h-screen bg-[#F3F9FE] font-sans text-[#26323D]">
+<div class="min-h-screen bg-[#F3F9FE] font-['Inter'] font-medium text-[#26323D]">
     <main class="mx-auto max-w-[1440px] px-8 py-7">
         <section class="mx-auto max-w-[1320px]">
-            <div class="mb-5 flex items-center justify-between">
-                <div class="flex items-center gap-4">
+            
+                <div class="flex w-full items-center gap-4 px-margin-mobile pt-margin-desktop md:px-margin-desktop">
                     <h1 class="text-2xl font-bold">商品管理</h1>
                 </div>
-            </div>
+          
 
             @if (TempData["SuccessMessage"] is string successMessage)
             {
@@ -81,7 +81,7 @@
 
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[1000px] text-left text-sm">
-                        <thead class="bg-tablehead text-[#4E5B65]">
+                        <thead class="bg-tablehead font-semibold text-[#4E5B65]">
                             <tr>
                                 <th class="w-12 px-6 py-4"><input id="select-all" type="checkbox" class="h-4 w-4" /></th>
                                 <th class="w-24 px-4 py-4">圖片</th>

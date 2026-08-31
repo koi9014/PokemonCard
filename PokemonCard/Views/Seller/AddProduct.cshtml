@@ -1,6 +1,6 @@
 @model PokemonCard.Controllers.AddProductInput
 @{
-    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
+    Layout = null;
     var locations = new[] { "北海道", "東北", "關東", "中部", "近畿", "中國", "四國", "九州", "沖繩" };
     var productTypes = new[] { "絨毛娃娃", "模型與公仔", "集換式卡牌", "生活與家居", "服飾與配件", "文具與辦公用品", "電玩周邊", "3C配件", "其他" };
 }
@@ -125,15 +125,21 @@
                     <section>
                         <div class="mb-3 flex items-center justify-between">
                             <h2 class="text-lg font-bold">商品規格</h2>
-                            <label class="flex cursor-pointer items-center gap-2 text-sm font-bold text-on-surface-variant">
-                                單一規格<input id="single-spec" type="checkbox" checked class="h-4 w-4 rounded text-primary" />
-                            </label>
+                            <div class="flex items-center gap-4">
+                                <label class="flex cursor-pointer items-center gap-2 text-sm font-bold text-on-surface-variant">
+                                    設定訂金<input id="deposit-toggle" type="checkbox" class="h-4 w-4 rounded text-primary" />
+                                </label>
+                                <label class="flex cursor-pointer items-center gap-2 text-sm font-bold text-on-surface-variant">
+                                    單一規格<input id="single-spec" type="checkbox" checked class="h-4 w-4 rounded text-primary" />
+                                </label>
+                            </div>
                         </div>
                         <div id="single-spec-panel" class="grid grid-cols-2 gap-3 rounded-xl border border-outline-variant/50 bg-surface p-4">
                             <input type="hidden" name="Specs[0].Category" value="" />
                             <input id="single-option" name="Specs[0].Option" readonly class="col-span-2 rounded-lg border-outline-variant bg-white text-on-surface-variant" value="單一規格" />
                             <div><label class="mb-1 block text-sm font-bold">價格</label><input id="single-price" name="Specs[0].Price" type="number" min="0" class="w-full rounded-lg border-outline-variant bg-white" placeholder="0" /></div>
                             <div><label class="mb-1 block text-sm font-bold">庫存</label><input id="single-stock" name="Specs[0].Stock" type="number" min="0" class="w-full rounded-lg border-outline-variant bg-white" placeholder="0" /></div>
+                            <div id="single-deposit-field" class="hidden col-span-2"><label class="mb-1 block text-sm font-bold">訂金</label><input id="single-deposit" name="Specs[0].Deposit" type="number" min="0" class="w-full rounded-lg border-outline-variant bg-white" placeholder="不設定訂金" disabled /></div>
                         </div>
                         <div id="multi-spec-panel" class="hidden rounded-xl border border-outline-variant/50 bg-surface p-4">
                             <div id="spec-list" class="space-y-4"></div>
@@ -163,6 +169,9 @@
         const singlePanel = document.getElementById('single-spec-panel');
         const multiPanel = document.getElementById('multi-spec-panel');
         const specList = document.getElementById('spec-list');
+        const depositToggle = document.getElementById('deposit-toggle');
+        const singleDepositField = document.getElementById('single-deposit-field');
+        const singleDeposit = document.getElementById('single-deposit');
 
         function updateCounter(input, output, max) { output.textContent = `${input.value.length}/${max}`; }
         updateCounter(nameInput, document.getElementById('name-count'), 50);
@@ -211,12 +220,14 @@
         function createOption(group, value = {}) {
             const row = document.createElement('div');
             row.className = 'option-row grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]';
-            row.innerHTML = '<input type="hidden" class="category-value"><input class="option rounded-lg border-outline-variant bg-white" placeholder="選項，例如：藍色"><div class="grid grid-cols-2 gap-2"><input class="price min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="價格"><input class="stock min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="庫存"></div><button type="button" class="remove self-center rounded-lg p-2 text-error"><span class="material-symbols-outlined">delete</span></button>';
+            row.innerHTML = '<input type="hidden" class="category-value"><input class="option rounded-lg border-outline-variant bg-white" placeholder="選項，例如：藍色"><div class="grid grid-cols-2 gap-2"><input class="price min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="價格"><input class="stock min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="庫存"><div class="deposit-field hidden col-span-2"><input class="deposit w-full min-w-0 rounded-lg border-outline-variant bg-white" type="number" min="0" placeholder="訂金（不設定可留空）" disabled></div></div><button type="button" class="remove self-center rounded-lg p-2 text-error"><span class="material-symbols-outlined">delete</span></button>';
             row.querySelector('.remove').addEventListener('click', () => row.remove());
             row.querySelector('.option').value = value.option ?? '';
             row.querySelector('.price').value = value.price ?? '';
             row.querySelector('.stock').value = value.stock ?? '';
+            row.querySelector('.deposit').value = value.deposit ?? '';
             group.querySelector('.option-list').appendChild(row);
+            updateDepositState();
         }
         function createSpec(category = '', options = []) {
             const group = document.createElement('div');
@@ -237,29 +248,42 @@
             singlePanel.querySelectorAll('input').forEach(input => input.disabled = !isSingle);
             multiPanel.querySelectorAll('input').forEach(input => input.disabled = isSingle);
             if (!isSingle && !specList.children.length) createSpec();
+            updateDepositState();
         }
         singleToggle.addEventListener('change', updateSpecMode);
         updateSpecMode();
 
+        function updateDepositState() {
+            const enabled = depositToggle.checked;
+            singleDepositField.classList.toggle('hidden', !enabled);
+            singleDeposit.disabled = !enabled || !singleToggle.checked;
+            multiPanel.querySelectorAll('.deposit-field').forEach(field => field.classList.toggle('hidden', !enabled));
+            multiPanel.querySelectorAll('.deposit').forEach(input => input.disabled = !enabled || singleToggle.checked);
+        }
+        depositToggle.addEventListener('change', updateDepositState);
+
         const savedSpecs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Specs));
         if (savedSpecs.length) {
+            depositToggle.checked = savedSpecs.some(spec => spec.Deposit != null);
             const isSingleSpec = savedSpecs.length === 1 && !savedSpecs[0].Category;
             if (isSingleSpec) {
                 singleToggle.checked = true;
                 document.getElementById('single-option').value = savedSpecs[0].Option || '單一規格';
                 document.getElementById('single-price').value = savedSpecs[0].Price;
                 document.getElementById('single-stock').value = savedSpecs[0].Stock;
+                document.getElementById('single-deposit').value = savedSpecs[0].Deposit ?? '';
                 updateSpecMode();
             } else {
                 singleToggle.checked = false;
                 specList.innerHTML = '';
                 Object.entries(savedSpecs.reduce((groups, spec) => {
-                    (groups[spec.Category || '未分類規格'] ??= []).push({ option: spec.Option, price: spec.Price, stock: spec.Stock });
+                    (groups[spec.Category || '未分類規格'] ??= []).push({ option: spec.Option, price: spec.Price, stock: spec.Stock, deposit: spec.Deposit });
                     return groups;
                 }, {})).forEach(([category, options]) => createSpec(category, options));
                 updateSpecMode();
             }
         }
+        updateDepositState();
 
         function renumberSpecs() {
             let index = 0;
@@ -271,6 +295,7 @@
                     row.querySelector('.option').name = `Specs[${index}].Option`;
                     row.querySelector('.price').name = `Specs[${index}].Price`;
                     row.querySelector('.stock').name = `Specs[${index}].Stock`;
+                    row.querySelector('.deposit').name = `Specs[${index}].Deposit`;
                     index++;
                 });
             });
