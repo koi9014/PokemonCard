@@ -98,7 +98,144 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         return View(model);
     }
 
-    public IActionResult OrderManage() => View();
+    [HttpGet]
+    public async Task<IActionResult> OrderManage(string? search, int page = 1)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var orders = context.Orders
+            .AsNoTracking()
+            .Where(order => order.SellerId == sellerId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var keyword = search.Trim();
+            var pattern = $"%{keyword}%";
+            orders = orders.Where(order =>
+                EF.Functions.Like(order.OrderNo, pattern)
+                || EF.Functions.Like(order.Buyer.Username ?? string.Empty, pattern)
+                || EF.Functions.Like(order.Buyer.Phone ?? string.Empty, pattern)
+                || EF.Functions.Like(order.Buyer.DisplayName ?? string.Empty, pattern));
+        }
+
+        const int pageSize = 10;
+        var totalCount = await orders.CountAsync();
+        page = Math.Clamp(page, 1, Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize)));
+
+        var model = new SellerOrderManageViewModel
+        {
+            Search = search,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Items = await orders
+                .OrderByDescending(order => order.OrderedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(order => new SellerOrderListItem
+                {
+                    OrderId = order.OrderId,
+                    OrderNo = order.OrderNo,
+                    Username = order.Buyer.Username ?? "-",
+                    OrderAmount = order.OrderAmount,
+                    OrderStatus = order.OrderStatus,
+                    OrderedAt = order.OrderedAt
+                })
+                .ToListAsync()
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ShipOrders(List<int>? selectedOrderIds)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        if (selectedOrderIds is not { Count: > 0 })
+        {
+            TempData["ErrorMessage"] = "請至少勾選一筆訂單。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var orders = await context.Orders
+            .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
+            .ToListAsync();
+        foreach (var order in orders)
+        {
+            order.OrderStatus = "SHIPPED";
+            order.OrderUpdatedAt = DateTime.Now;
+        }
+
+        await context.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"已將 {orders.Count} 筆訂單更新為已出貨。";
+        return RedirectToAction(nameof(OrderManage));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MergeOrders(List<int>? selectedOrderIds)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        if (selectedOrderIds is not { Count: > 1 })
+        {
+            TempData["ErrorMessage"] = "請至少勾選兩筆訂單後再合併。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var orders = await context.Orders
+            .Include(order => order.OrderItems)
+            .Include(order => order.OrderHistories)
+            .Include(order => order.Payments)
+            .Include(order => order.Logistic)
+            .Include(order => order.MoneyReconciliation)
+            .Include(order => order.Reviews)
+            .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
+            .OrderBy(order => order.OrderedAt)
+            .ToListAsync();
+
+        if (orders.Count != selectedOrderIds.Distinct().Count())
+        {
+            TempData["ErrorMessage"] = "選取的訂單資料不存在或不屬於目前賣家。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var target = orders[0];
+        var sources = orders.Skip(1).ToList();
+        if (orders.Any(order => order.BuyerId != target.BuyerId
+            || order.ReceiverPhone != target.ReceiverPhone
+            || order.ShippingAddress != target.ShippingAddress))
+        {
+            TempData["ErrorMessage"] = "僅能合併同一買家且收件資訊相同的訂單。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        if (orders.Any(order => order.Logistic is not null || order.MoneyReconciliation is not null || order.Reviews.Any()))
+        {
+            TempData["ErrorMessage"] = "已建立物流、對帳或評價紀錄的訂單不可合併。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        foreach (var source in sources)
+        {
+            foreach (var item in source.OrderItems) item.OrderId = target.OrderId;
+            foreach (var history in source.OrderHistories) history.OrderNo = target.OrderNo;
+            foreach (var payment in source.Payments) payment.OrderId = target.OrderId;
+            target.OrderAmount += source.OrderAmount;
+            target.OrderDeposit += source.OrderDeposit;
+            context.Orders.Remove(source);
+        }
+
+        target.OrderUpdatedAt = DateTime.Now;
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        TempData["SuccessMessage"] = $"訂單已合併至 {target.OrderNo}。";
+        return RedirectToAction(nameof(OrderManage));
+    }
 
     [HttpGet]
     public async Task<IActionResult> ProductManage(string? productType, string? status, string? search, int page = 1)
@@ -480,6 +617,26 @@ public class ProductListItem
     public int Stock { get; set; }
     public int Sales { get; set; }
     public bool IsScheduled { get; set; }
+}
+
+public class SellerOrderManageViewModel
+{
+    public string? Search { get; set; }
+    public List<SellerOrderListItem> Items { get; set; } = [];
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+}
+
+public class SellerOrderListItem
+{
+    public int OrderId { get; set; }
+    public string OrderNo { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public int OrderAmount { get; set; }
+    public string OrderStatus { get; set; } = string.Empty;
+    public DateTime OrderedAt { get; set; }
 }
 
 public class ProductSpecInput

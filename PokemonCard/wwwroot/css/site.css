@@ -9,7 +9,7 @@ body {
 
 @media (max-width: 991.98px) {
   .seller-member-main {
-    width: 150%;
+    width: 100%;
     margin-left: 0;
     padding-block: .75rem;
     transform: none;
