@@ -51,32 +51,73 @@ namespace PokemonCard. Controllers
 
             return View(vm);
         }
-        public IActionResult OrderDetail( )
+        
+        public async Task<IActionResult> Index( string? status )
         {
-            var userIdString = User. FindFirstValue(ClaimTypes. NameIdentifier);
-
+            var userIdString =
+                User. FindFirstValue(ClaimTypes. NameIdentifier);
 
             if(string. IsNullOrEmpty(userIdString))
             {
-                return RedirectToAction("Login", "UserLogin");
+                return Unauthorized( );
             }
 
-            int userId = int. Parse(userIdString);
+            var userId = int. Parse(userIdString);
 
-            var data = _context. Orders
-                . Include(p => p. Buyer)
-                . Include(p => p. Seller)
-                 . Include(p => p. OrderItems)
-                     . Include(p => p. OrderItems)
-                      . ThenInclude(p => p. Product)
+            var ordersQuery = _context. Orders
+                . Include(o => o. Seller)
+                . Include(o => o. OrderItems)
+                    . ThenInclude(oi => oi. Product)
                         . ThenInclude(p => p. ProductImages)
-                 . Where(p => p. BuyerId == userId)
-                    . ToList( );
-            Console. WriteLine($"UserId = {userId}");
-            Console. WriteLine($"Order Count = {data. Count}");
-            return View(data);
+                . Where(o => o. BuyerId == userId);
 
+            if(!string. IsNullOrEmpty(status))
+            {
+                ordersQuery = ordersQuery
+                    . Where(o => o. OrderStatus == status);
+            }
+
+            var orders = await ordersQuery
+                . OrderByDescending(o => o. OrderCreatedAt)
+                . ToListAsync( );
+
+            var viewModel = new MemberCenterViewModel
+            {
+                Orders = orders
+            };
+
+            return View("Order", viewModel);
 
         }
+        public async Task<IActionResult> OrderDetail( int id )
+        {
+            var userIdString = User. FindFirstValue(ClaimTypes. NameIdentifier);
+
+            if(string. IsNullOrEmpty(userIdString))
+            {
+                return Unauthorized( );
+            }
+
+            var userId = int. Parse(userIdString);
+
+            var order = await _context. Orders
+                . Include(o => o. Seller)
+                . Include(o => o. OrderItems)
+                    . ThenInclude(oi => oi. Product)
+                        . ThenInclude(p => p. ProductImages)
+                . FirstOrDefaultAsync(o =>
+                    o. OrderId == id &&
+                    o. BuyerId == userId);
+
+            if(order == null)
+            {
+                return NotFound( );
+            }
+
+            return View(order);
+        }
+
+
+
     }
 }

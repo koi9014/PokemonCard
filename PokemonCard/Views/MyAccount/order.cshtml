@@ -64,12 +64,12 @@
                         <div class="row align-items-center">
 
                             <div class="col-md-3">
+
                                 <img src="@item.OrderItems.FirstOrDefault( )?.Product?.ProductImages.FirstOrDefault( )?.ImageUrl"
                                      width="150"
                                      height="150"
                                      alt="@item.OrderItems.FirstOrDefault( )?.Product?.ProductName"
                                      class="img-fluid">
-                    
 
                             </div>
 
@@ -92,6 +92,18 @@
                                 </p>
 
                             </div>
+
+                        </div>
+
+                        <!-- 訂單詳情按鈕 -->
+                        <div class="text-end mt-3">
+
+                            <a asp-controller="MyAccount"
+                               asp-action="OrderDetail"
+                               asp-route-id="@item.OrderId"
+                               class="btn btn-primary">
+                                訂單詳情
+                            </a>
 
                         </div>
 

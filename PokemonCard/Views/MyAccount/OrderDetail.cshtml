@@ -1,38 +1,50 @@
-﻿@model List<PokemonCard.Models.Order>
+﻿@model PokemonCard.Models.Order
 
 <div class="container-fluid">
 
     <!-- 頁面標題 -->
     <div class="mb-4">
-        <h3 class="fw-bold">訂單完成與評價</h3>
+        <h3 class="fw-bold">訂單詳細資料</h3>
     </div>
-
-
 
 
     <!-- 訂單詳細資料 -->
     <div class="card shadow-sm border-0">
 
+
         <!-- ==================== -->
         <!-- 訂單上方資訊 -->
         <!-- ==================== -->
+
         <div class="card-header bg-white border-bottom py-3">
 
             <div class="d-flex justify-content-between align-items-center">
 
                 <div>
-                    <span class="text-muted me-2">訂單編號</span>
-                    <span class="fw-bold">
-                        ORD202608250001
+
+                    <span class="text-muted me-2">
+                        訂單編號
                     </span>
+
+                    <span class="fw-bold">
+                        @Model.OrderNo
+                    </span>
+
                 </div>
 
+
                 <div>
-                    <span class="text-muted me-2">訂單狀態</span>
+
+                    <span class="text-muted me-2">
+                        訂單狀態
+                    </span>
 
                     <span class="badge bg-success">
-                        已完成
+
+                        @PokemonCard.Helpers.OrderStatus.GetText(Model.OrderStatus)
+
                     </span>
+
                 </div>
 
             </div>
@@ -40,32 +52,109 @@
         </div>
 
 
+
         <!-- ==================== -->
         <!-- 訂單進度 -->
         <!-- ==================== -->
+        @{
+            string status = Model.OrderStatus?.ToUpper( ) ?? "";
+
+            int currentStep = status switch
+            {
+                "PENDING" => 1,
+                "PAID" => 2,
+                "PROCESSING" => 3,
+                "SHIPPED" => 4,
+                "COMPLETED" => 5,
+                _ => 1
+            };
+        }
+
         <div class="card-body border-bottom py-4">
 
-            <div class="text-center mb-3">
+            <!-- 訂單編號 -->
+
+            <div class="text-center mb-4">
+
                 <h5 class="fw-bold mb-0">
                     訂單編號
                 </h5>
 
                 <small class="text-muted">
-                    ORD202608250001
+                    @Model.OrderNo
                 </small>
+
             </div>
 
 
-            <div class="d-flex align-items-center justify-content-center">
+            <!-- ==================== -->
+            <!-- 訂單進度 -->
+            <!-- ==================== -->
 
-                <!-- 已付款 -->
+            <div class="d-flex align-items-start justify-content-center">
+
+
+                <!-- ==================== -->
+                <!-- 1. 待付款 -->
+                <!-- ==================== -->
+
                 <div class="text-center">
 
-                    <div class="rounded-circle text-white
-                        d-flex align-items-center justify-content-center mx-auto"
-                         style="width: 40px; height: 40px; background-color: #adb5bd;">
+                    <div class="rounded-circle
+                        d-flex align-items-center justify-content-center mx-auto
+                        @(currentStep > 1
+                            ? "bg-primary text-white"
+                            : currentStep == 1
+                                ? "bg-primary text-white"
+                                : "bg-light text-muted")"
+                         style="width:45px;height:45px;">
 
-                        <i class="bi bi-check-lg"></i>
+                        @if(currentStep > 1)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-wallet2 fs-5"></i>
+                        }
+
+                    </div>
+
+                    <div class="mt-2 fw-semibold">
+                        待付款
+                    </div>
+
+                </div>
+
+
+                <!-- 線 -->
+
+                <div class="mt-3 @(currentStep >= 2 ? "bg-primary" : "bg-secondary-subtle")"
+                     style="height:3px;width:90px;">
+                </div>
+
+
+                <!-- ==================== -->
+                <!-- 2. 已付款 -->
+                <!-- ==================== -->
+
+                <div class="text-center">
+
+                    <div class="rounded-circle
+                        d-flex align-items-center justify-content-center mx-auto
+                        @(currentStep >= 2
+                            ? "bg-primary text-white"
+                            : "bg-light text-muted")"
+                         style="width:45px;height:45px;">
+
+                        @if(currentStep > 2)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-credit-card fs-5"></i>
+                        }
 
                     </div>
 
@@ -77,19 +166,33 @@
 
 
                 <!-- 線 -->
-                <div class="bg-primary"
-                     style="height: 3px; width: 120px;">
+
+                <div class="mt-3 @(currentStep >= 3 ? "bg-primary" : "bg-secondary-subtle")"
+                     style="height:3px;width:90px;">
                 </div>
 
 
-                <!-- 待出貨 -->
+                <!-- ==================== -->
+                <!-- 3. 待出貨 -->
+                <!-- ==================== -->
+
                 <div class="text-center">
 
-                    <div class="rounded-circle bg-primary text-white
-                        d-flex align-items-center justify-content-center mx-auto"
-                         style="width: 40px; height: 40px;">
+                    <div class="rounded-circle
+                        d-flex align-items-center justify-content-center mx-auto
+                        @(currentStep >= 3
+                            ? "bg-primary text-white"
+                            : "bg-light text-muted")"
+                         style="width:45px;height:45px;">
 
-                        <i class="bi bi-check-lg"></i>
+                        @if(currentStep > 3)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-box-seam fs-5"></i>
+                        }
 
                     </div>
 
@@ -101,23 +204,76 @@
 
 
                 <!-- 線 -->
-                <div class="bg-primary"
-                     style="height: 3px; width: 120px;">
+
+                <div class="mt-3 @(currentStep >= 4 ? "bg-primary" : "bg-secondary-subtle")"
+                     style="height:3px;width:90px;">
                 </div>
 
 
-                <!-- 已完成 -->
+                <!-- ==================== -->
+                <!-- 4. 運送中 -->
+                <!-- ==================== -->
+
                 <div class="text-center">
 
-                    <div class="rounded-circle bg-success text-white
-                        d-flex align-items-center justify-content-center mx-auto"
-                         style="width: 40px; height: 40px;">
+                    <div class="rounded-circle
+                        d-flex align-items-center justify-content-center mx-auto
+                        @(currentStep >= 4
+                            ? "bg-primary text-white"
+                            : "bg-light text-muted")"
+                         style="width:45px;height:45px;">
 
-                        <i class="bi bi-check-lg"></i>
+                        @if(currentStep > 4)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-truck fs-5"></i>
+                        }
 
                     </div>
 
-                    <div class="mt-2 fw-semibold text-success">
+                    <div class="mt-2 fw-semibold">
+                        運送中
+                    </div>
+
+                </div>
+
+
+                <!-- 線 -->
+
+                <div class="mt-3 @(currentStep >= 5 ? "bg-success" : "bg-secondary-subtle")"
+                     style="height:3px;width:90px;">
+                </div>
+
+
+                <!-- ==================== -->
+                <!-- 5. 已完成 -->
+                <!-- ==================== -->
+
+                <div class="text-center">
+
+                    <div class="rounded-circle
+                        d-flex align-items-center justify-content-center mx-auto
+                        @(currentStep >= 5
+                            ? "bg-success text-white"
+                            : "bg-light text-muted")"
+                         style="width:45px;height:45px;">
+
+                        @if(currentStep >= 5)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-house-check fs-5"></i>
+                        }
+
+                    </div>
+
+                    <div class="mt-2 fw-semibold
+                        @(currentStep >= 5 ? "text-success" : "text-muted")">
                         已完成
                     </div>
 
@@ -128,47 +284,56 @@
         </div>
 
 
+
         <!-- ==================== -->
         <!-- 收件地址 -->
         <!-- ==================== -->
+
         <div class="card-body border-bottom">
 
             <h5 class="fw-bold mb-3">
                 收件地址
             </h5>
 
+
             <div class="row">
 
                 <div class="col-md-4">
+
                     <span class="text-muted">
                         姓名
                     </span>
 
                     <div class="fw-semibold mt-1">
-                        王小明
+                        @Model.ReceiverName
                     </div>
+
                 </div>
 
 
                 <div class="col-md-4">
+
                     <span class="text-muted">
                         電話
                     </span>
 
                     <div class="fw-semibold mt-1">
-                        0912-345-678
+                        @Model.ReceiverPhone
                     </div>
+
                 </div>
 
 
                 <div class="col-md-4">
+
                     <span class="text-muted">
                         地址
                     </span>
 
                     <div class="fw-semibold mt-1">
-                        台北市中正區重慶南路一段100號
+                        @Model.ShippingAddress
                     </div>
+
                 </div>
 
             </div>
@@ -176,9 +341,11 @@
         </div>
 
 
+
         <!-- ==================== -->
         <!-- 商品資訊 -->
         <!-- ==================== -->
+
         <div class="card-body border-bottom">
 
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -188,218 +355,189 @@
                 </h5>
 
                 <span class="text-muted">
-                    共 2 件商品
+                    共 @Model.OrderItems.Sum(x => x.Quantity) 件商品
                 </span>
 
             </div>
 
 
-            <!-- 商品 1 -->
-            <div class="row align-items-center py-3 border-bottom">
+            @foreach(var item in Model.OrderItems)
+            {
 
-                <!-- 商品圖片 -->
-                <div class="col-md-2 text-center">
+                <div class="row align-items-center py-3 border-bottom">
 
-                    <div class="border rounded-3 d-flex align-items-center justify-content-center mx-auto"
-                         style="width: 100px; height: 100px;">
 
-                        <span class="text-muted">
-                            商品圖片
-                        </span>
+                    <!-- 商品圖片 -->
+
+                    <div class="col-md-2 text-center">
+
+                        <img src="@item.Product?.ProductImages.FirstOrDefault( )?.ImageUrl"
+                             width="100"
+                             height="100"
+                             class="img-fluid rounded-3"
+                             style="object-fit:cover;"
+                             alt="@item.ProductName">
 
                     </div>
+
+
+
+                    <!-- 商品名稱 -->
+
+                    <div class="col-md-4">
+
+                        <h6 class="fw-bold mb-2">
+                            @item.ProductName
+                        </h6>
+
+
+                        <div class="text-muted">
+
+                            規格：
+
+                            @item.ProductSpec
+
+                            @if(!string.IsNullOrEmpty(item.ProductSpec2))
+                            {
+                                <span>
+                                    / @item.ProductSpec2
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <div class="text-muted">
+
+                            商品編號：
+
+                            @item.ProductId
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- 數量 -->
+
+                    <div class="col-md-2 text-center">
+
+                        <div class="text-muted small">
+                            數量
+                        </div>
+
+                        <div class="fw-semibold">
+                            @item.Quantity
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- 單價 -->
+
+                    <div class="col-md-2 text-center">
+
+                        <div class="text-muted small">
+                            單價
+                        </div>
+
+                        <div class="fw-semibold">
+
+                            NT$ @item.UnitPrice.ToString("N0")
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- 小計 -->
+
+                    <div class="col-md-2 text-end">
+
+                        <div class="text-muted small">
+                            小計
+                        </div>
+
+                        <div class="fw-bold text-danger">
+
+                            NT$ @((item.UnitPrice * item.Quantity).ToString("N0"))
+
+                        </div>
+
+                    </div>
+
 
                 </div>
 
-
-                <!-- 商品名稱 -->
-                <div class="col-md-4">
-
-                    <h6 class="fw-bold mb-2">
-                        寶可夢卡牌 強化擴充包
-                    </h6>
-
-                    <div class="text-muted">
-                        規格：黑色 / M
-                    </div>
-
-                    <div class="text-muted">
-                        商品編號：PKM001
-                    </div>
-
-                </div>
-
-
-                <!-- 數量 -->
-                <div class="col-md-2 text-center">
-
-                    <div class="text-muted small">
-                        數量
-                    </div>
-
-                    <div class="fw-semibold">
-                        2
-                    </div>
-
-                </div>
-
-
-                <!-- 單價 -->
-                <div class="col-md-2 text-center">
-
-                    <div class="text-muted small">
-                        單價
-                    </div>
-
-                    <div class="fw-semibold">
-                        $250
-                    </div>
-
-                </div>
-
-
-                <!-- 小計 -->
-                <div class="col-md-2 text-end">
-
-                    <div class="text-muted small">
-                        小計
-                    </div>
-
-                    <div class="fw-bold text-danger">
-                        $500
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- 商品 2 -->
-            <div class="row align-items-center py-3">
-
-                <!-- 商品圖片 -->
-                <div class="col-md-2 text-center">
-
-                    <div class="border rounded-3 d-flex align-items-center justify-content-center mx-auto"
-                         style="width: 100px; height: 100px;">
-
-                        <span class="text-muted">
-                            商品圖片
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- 商品名稱 -->
-                <div class="col-md-4">
-
-                    <h6 class="fw-bold mb-2">
-                        寶可夢皮卡丘收藏卡
-                    </h6>
-
-                    <div class="text-muted">
-                        規格：一般版
-                    </div>
-
-                    <div class="text-muted">
-                        商品編號：PKM002
-                    </div>
-
-                </div>
-
-
-                <!-- 數量 -->
-                <div class="col-md-2 text-center">
-
-                    <div class="text-muted small">
-                        數量
-                    </div>
-
-                    <div class="fw-semibold">
-                        1
-                    </div>
-
-                </div>
-
-
-                <!-- 單價 -->
-                <div class="col-md-2 text-center">
-
-                    <div class="text-muted small">
-                        單價
-                    </div>
-
-                    <div class="fw-semibold">
-                        $300
-                    </div>
-
-                </div>
-
-
-                <!-- 小計 -->
-                <div class="col-md-2 text-end">
-
-                    <div class="text-muted small">
-                        小計
-                    </div>
-
-                    <div class="fw-bold text-danger">
-                        $300
-                    </div>
-
-                </div>
-
-            </div>
+            }
 
         </div>
+
 
 
         <!-- ==================== -->
         <!-- 金額明細 -->
         <!-- ==================== -->
+
         <div class="card-body">
 
             <div class="row justify-content-end">
 
                 <div class="col-md-5">
 
+
+                    <!-- 商品小計 -->
+
                     <div class="d-flex justify-content-between mb-2">
+
                         <span>
                             商品小計
                         </span>
 
                         <span>
-                            $800
+                            NT$ @Model.OrderItems.Sum(x => x.UnitPrice * x.Quantity).ToString("N0")
                         </span>
+
                     </div>
 
 
+                    <!-- 運費 -->
+
                     <div class="d-flex justify-content-between mb-2">
+
                         <span>
                             運費
                         </span>
 
                         <span>
-                            $60
+                            NT$ @Model.ShipAmount.ToString("N0")
                         </span>
+
                     </div>
 
 
+                    <!-- 折價 -->
+
                     <div class="d-flex justify-content-between mb-2">
+
                         <span>
                             折價券
                         </span>
 
                         <span class="text-danger">
-                            -$100
+                            -NT$ 0
                         </span>
+
                     </div>
 
 
                     <hr>
 
+
+                    <!-- 訂單金額 -->
 
                     <div class="d-flex justify-content-between mb-3">
 
@@ -408,61 +546,74 @@
                         </span>
 
                         <span class="fw-bold fs-5 text-danger">
-                            $760
+
+                            NT$ @Model.OrderAmount.ToString("N0")
+
                         </span>
 
                     </div>
 
 
-                    <div class="d-flex justify-content-between">
+                    <!-- 訂單建立時間 -->
+
+                    <div class="d-flex justify-content-between mb-2">
 
                         <span>
-                            付款方式
+                            下單時間
                         </span>
 
-                        <span class="fw-semibold">
-                            信用卡 / 金融卡
+                        <span>
+                            @Model.OrderCreatedAt.ToString("yyyy/MM/dd HH:mm")
                         </span>
 
                     </div>
+
 
                 </div>
 
             </div>
 
         </div>
+
 
 
         <!-- ==================== -->
         <!-- 評價 -->
         <!-- ==================== -->
-        <div class="card-body border-top">
+        @if(Model.OrderStatus == "Completed")
+        {
 
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="card-body border-top">
 
-                <div>
+                <div class="d-flex justify-content-between align-items-center">
 
-                    <h5 class="fw-bold mb-1">
-                        商品評價
-                    </h5>
+                    <div>
 
-                    <p class="text-muted mb-0">
-                        分享你對這次購物的體驗
-                    </p>
+                        <h5 class="fw-bold mb-1">
+                            商品評價
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            分享你對這次購物的體驗
+                        </p>
+
+                    </div>
+
+
+                    <button type="button"
+                            class="btn btn-primary px-4">
+
+                        <i class="bi bi-star me-1"></i>
+
+                        前往評價
+
+                    </button>
 
                 </div>
 
-                <button type="button"
-                        class="btn btn-primary px-4">
-
-                    <i class="bi bi-star me-1"></i>
-                    前往評價
-
-                </button>
-
             </div>
 
-        </div>
+        }
 
     </div>
 

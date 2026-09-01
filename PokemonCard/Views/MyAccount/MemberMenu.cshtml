@@ -5,11 +5,12 @@
     <h5 class="fw-bold mb-3">我的訂單</h5>
 
     <div class="list-group mb-4">
-        <a href="#" class="list-group-item list-group-item-action">待付款</a>
-        <a href="#" class="list-group-item list-group-item-action">待出貨</a>
-        <a href="#" class="list-group-item list-group-item-action">待收貨</a>
-        <a href="#" class="list-group-item list-group-item-action">已完成</a>
-        <a href="#" class="list-group-item list-group-item-action">退貨</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="Pending" class="list-group-item list-group-item-action">待付款</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="Processing" class="list-group-item list-group-item-action">待出貨</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="Shipped" class="list-group-item list-group-item-action">待收貨</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="Completed" class="list-group-item list-group-item-action">已完成</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="Returned" class="list-group-item list-group-item-action">退貨</a>
+
     </div>
 
 

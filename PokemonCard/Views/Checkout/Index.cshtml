@@ -13,7 +13,6 @@
             購物車 <span>(1 件)</span>
         </div>
 
-
         <!-- 商品標題 -->
         <div class="product-header">
 
@@ -24,10 +23,8 @@
 
         </div>
 
-
         <!-- 商品 -->
         <div class="cart-product">
-
 
             <!-- 商品資訊 -->
             <div class="product-info">
@@ -49,7 +46,6 @@
 
             </div>
 
-
             <!-- 單價 -->
             <div class="product-price">
 
@@ -60,7 +56,6 @@
                 NT$ @(((ProductSpec)ViewBag.Spec).SpecsPrice)
 
             </div>
-
 
             <!-- 數量 -->
             <div class="product-quantity">
@@ -90,7 +85,6 @@
 
             </div>
 
-
             <!-- 小計 -->
             <div class="product-subtotal">
 
@@ -112,352 +106,392 @@
 <!-- =================================
          ② 填寫資料
     ================================== -->
-<div class="checkout-card customer-card">
 
-    <div class="card-title">
-        填寫資料
-    </div>
+<form asp-controller="Checkout"
+      asp-action="CreateOrder"
+      method="post">
 
+    <!-- 商品 ID -->
+    <input type="hidden"
+           name="productId"
+           value="@Model.ProductId">
 
-    <div class="form-content">
+    <!-- 規格 ID -->
+    <input type="hidden"
+           name="specificationId"
+           value="@(((ProductSpec)ViewBag.Spec).SpecificationId)">
 
-
-        <!-- ==================
-                 聯絡資訊
-            =================== -->
-        <div class="form-section">
-
-            <div class="form-section-title">
-                聯絡資訊
-            </div>
-
-            <div class="row g-3">
-
-                <div class="col-md-6">
-
-                    <label class="form-label">
-                        姓名 <span>*</span>
-                    </label>
-
-                    <input type="text"
-                           class="form-control"
-                           placeholder="請輸入姓名">
-
-                </div>
+    <!-- 數量 -->
+    <input type="hidden"
+           name="quantity"
+           id="quantityHidden"
+           value="@ViewBag.Quantity">
 
 
-                <div class="col-md-6">
+    <div class="checkout-card customer-card">
 
-                    <label class="form-label">
-                        手機號碼 <span>*</span>
-                    </label>
-
-                    <input type="tel"
-                           class="form-control"
-                           placeholder="請輸入手機號碼">
-
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label class="form-label">
-                        Email <span>*</span>
-                    </label>
-
-                    <input type="email"
-                           class="form-control"
-                           placeholder="請輸入 Email">
-
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label class="form-label">
-                        國家／地區 <span>*</span>
-                    </label>
-
-                    <select class="form-select">
-
-                        <option>台灣</option>
-                        <option>日本</option>
-                        <option>香港</option>
-
-                    </select>
-
-                </div>
-
-            </div>
-
+        <div class="card-title">
+            填寫資料
         </div>
 
+        <div class="form-content">
 
-        <!-- ==================
-                 配送資訊
-            =================== -->
-        <div class="form-section">
 
-            <div class="form-section-title">
-                配送資訊
-            </div>
+            <!-- ==================
+                     聯絡資訊
+                =================== -->
+            <div class="form-section">
 
-            <div class="row g-3">
-
-                <div class="col-md-6">
-
-                    <label class="form-label">
-                        送貨方式 <span>*</span>
-                    </label>
-
-                    <select class="form-select">
-
-                        <option>宅配</option>
-                        <option>超商取貨</option>
-
-                    </select>
-
+                <div class="form-section-title">
+                    聯絡資訊
                 </div>
 
+                <div class="row g-3">
 
-                <div class="col-md-6">
+                    <!-- 姓名 -->
+                    <div class="col-md-6">
 
-                    <label class="form-label">
-                        郵遞區號
-                    </label>
+                        <label class="form-label">
+                            姓名 <span>*</span>
+                        </label>
 
-                    <input type="text"
-                           class="form-control"
-                           placeholder="請輸入郵遞區號">
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label class="form-label">
-                        縣市 <span>*</span>
-                    </label>
-
-                    <select id="city"
-                            name="city"
-                            class="form-select">
-
-                        <option value="">請選擇縣市</option>
-
-                        <option value="基隆市">基隆市</option>
-                        <option value="臺北市">臺北市</option>
-                        <option value="新北市">新北市</option>
-                        <option value="桃園市">桃園市</option>
-                        <option value="新竹市">新竹市</option>
-                        <option value="新竹縣">新竹縣</option>
-                        <option value="苗栗縣">苗栗縣</option>
-                        <option value="臺中市">臺中市</option>
-                        <option value="彰化縣">彰化縣</option>
-                        <option value="南投縣">南投縣</option>
-                        <option value="雲林縣">雲林縣</option>
-                        <option value="嘉義市">嘉義市</option>
-                        <option value="嘉義縣">嘉義縣</option>
-                        <option value="臺南市">臺南市</option>
-                        <option value="高雄市">高雄市</option>
-                        <option value="屏東縣">屏東縣</option>
-                        <option value="宜蘭縣">宜蘭縣</option>
-                        <option value="花蓮縣">花蓮縣</option>
-                        <option value="臺東縣">臺東縣</option>
-                        <option value="澎湖縣">澎湖縣</option>
-                        <option value="金門縣">金門縣</option>
-                        <option value="連江縣">連江縣</option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label class="form-label">
-                        區域 <span>*</span>
-                    </label>
-
-                    <select id="district"
-                            name="district"
-                            class="form-select">
-
-                        <option value="">請先選擇縣市</option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label class="form-label">
-                        地址 <span>*</span>
-                    </label>
-
-                    <input type="text"
-                           name="address"
-                           class="form-control"
-                           placeholder="請輸入詳細地址">
-
-                </div>
-
-            </div>
-
-
-            <div class="shipping-note">
-
-                <i class="bi bi-info-circle"></i>
-
-                點選「前往結帳」後，即可於下一頁選擇希望的到貨日期。
-
-                <br>
-
-                <span>
-                    未指定到貨日：將於 3–5 個工作天內出貨
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <!-- ==================
-                 付款方式
-            =================== -->
-        <div class="form-section">
-
-            <div class="form-section-title">
-                付款方式
-            </div>
-
-            <div class="payment-option">
-
-                <div>
-
-                    <div class="payment-name">
-
-                        <i class="bi bi-credit-card"></i>
-
-                        信用卡
+                        <input type="text"
+                               class="form-control"
+                               name="customerName"
+                               placeholder="請輸入姓名">
 
                     </div>
 
-                    <small>
-                        VISA / Master / JCB
-                    </small>
+
+                    <!-- 手機 -->
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            手機號碼 <span>*</span>
+                        </label>
+
+                        <input type="tel"
+                               class="form-control"
+                               name="phone"
+                               placeholder="請輸入手機號碼">
+
+                    </div>
+
+
+                    <!-- Email -->
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Email <span>*</span>
+                        </label>
+
+                        <input type="email"
+                               class="form-control"
+                               name="email"
+                               placeholder="請輸入 Email">
+
+                    </div>
 
                 </div>
 
-                <div class="payment-radio">
+            </div>
 
-                    <input type="radio"
-                           name="payment"
-                           checked>
+
+            <!-- ==================
+                     配送資訊
+                =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    配送資訊
+                </div>
+
+                <div class="row g-3">
+
+
+                    <!-- 送貨方式 -->
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            送貨方式 <span>*</span>
+                        </label>
+
+                        <select class="form-select"
+                                name="shippingMethod">
+
+                            <option value="宅配">
+                                宅配
+                            </option>
+
+                            <option value="超商取貨">
+                                超商取貨
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- 郵遞區號 -->
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            郵遞區號
+                        </label>
+
+                        <input type="text"
+                               name="postalCode"
+                               class="form-control"
+                               placeholder="請輸入郵遞區號">
+
+                    </div>
+
+
+                    <!-- 縣市 -->
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            縣市 <span>*</span>
+                        </label>
+
+                        <select id="city"
+                                name="city"
+                                class="form-select">
+
+                            <option value="">
+                                請選擇縣市
+                            </option>
+
+                            <option value="基隆市">基隆市</option>
+                            <option value="臺北市">臺北市</option>
+                            <option value="新北市">新北市</option>
+                            <option value="桃園市">桃園市</option>
+                            <option value="新竹市">新竹市</option>
+                            <option value="新竹縣">新竹縣</option>
+                            <option value="苗栗縣">苗栗縣</option>
+                            <option value="臺中市">臺中市</option>
+                            <option value="彰化縣">彰化縣</option>
+                            <option value="南投縣">南投縣</option>
+                            <option value="雲林縣">雲林縣</option>
+                            <option value="嘉義市">嘉義市</option>
+                            <option value="嘉義縣">嘉義縣</option>
+                            <option value="臺南市">臺南市</option>
+                            <option value="高雄市">高雄市</option>
+                            <option value="屏東縣">屏東縣</option>
+                            <option value="宜蘭縣">宜蘭縣</option>
+                            <option value="花蓮縣">花蓮縣</option>
+                            <option value="臺東縣">臺東縣</option>
+                            <option value="澎湖縣">澎湖縣</option>
+                            <option value="金門縣">金門縣</option>
+                            <option value="連江縣">連江縣</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- 區域 -->
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            區域 <span>*</span>
+                        </label>
+
+                        <select id="district"
+                                name="district"
+                                class="form-select">
+
+                            <option value="">
+                                請先選擇縣市
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- 地址 -->
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            地址 <span>*</span>
+                        </label>
+
+                        <input type="text"
+                               name="address"
+                               class="form-control"
+                               placeholder="請輸入詳細地址">
+
+                    </div>
+
+                </div>
+
+
+                <div class="shipping-note">
+
+                    <i class="bi bi-info-circle"></i>
+
+                    點選「前往結帳」後，即可於下一頁選擇希望的到貨日期。
+
+                    <br>
+
+                    <span>
+                        未指定到貨日：將於 3–5 個工作天內出貨
+                    </span>
 
                 </div>
 
             </div>
 
+
+            <!-- ==================
+                     付款方式
+                =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    付款方式
+                </div>
+
+                <div class="payment-option">
+
+                    <div>
+
+                        <div class="payment-name">
+
+                            <i class="bi bi-credit-card"></i>
+
+                            轉帳
+
+                        </div>
+
+                        <small>
+                            VISA / Master / JCB
+                        </small>
+
+                    </div>
+
+                    <div class="payment-radio">
+
+                        <input type="radio"
+                               name="paymentMethod"
+                               value="轉帳"
+                               checked>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================
+                     訂單備註
+                =================== -->
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    訂單備註
+                </div>
+
+                <textarea class="form-control"
+                          name="note"
+                          rows="4"
+                          placeholder="有其他需求可以在這裡留言"></textarea>
+
+            </div>
+
+
+            <!-- ==================
+                     金額
+                =================== -->
+            <div class="order-summary">
+
+                <div class="summary-row">
+
+                    <span>
+                        商品小計
+                    </span>
+
+                    <span id="summarySubtotal">
+                        NT$ @(((ProductSpec)ViewBag.Spec).SpecsPrice * (int)ViewBag.Quantity)
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        運費
+                    </span>
+
+                    <span>
+                        NT$60
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row discount">
+
+                    <span>
+                        優惠折扣
+                    </span>
+
+                    <span>
+                        - NT$0
+                    </span>
+
+                </div>
+
+
+                <hr>
+
+
+                <div class="total-row">
+
+                    <span>
+                        應付金額
+                    </span>
+
+                    <strong id="totalAmount">
+
+                        NT$ @(((ProductSpec)ViewBag.Spec).SpecsPrice * (int)ViewBag.Quantity + 60)
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================
+                     結帳按鈕
+                =================== -->
+            <div class="checkout-action">
+
+                <button type="submit"
+                        class="checkout-btn">
+                    前往結帳
+                </button>
+
+            </div>
+
+
         </div>
-
-
-        <!-- ==================
-                 訂單備註
-            =================== -->
-        <div class="form-section">
-
-            <div class="form-section-title">
-                訂單備註
-            </div>
-
-            <textarea class="form-control"
-                      rows="4"
-                      placeholder="有其他需求可以在這裡留言"></textarea>
-
-        </div>
-
-
-        <!-- ==================
-                 金額
-            =================== -->
-        <div class="order-summary">
-
-            <div class="summary-row">
-
-                <span>
-                    商品小計
-                </span>
-
-                <span id="summarySubtotal">
-                    NT$ @(((ProductSpec)ViewBag.Spec).SpecsPrice * (int)ViewBag.Quantity)
-                </span>
-
-            </div>
-
-
-            <div class="summary-row">
-
-                <span>
-                    運費
-                </span>
-
-                <span>
-                    NT$60
-                </span>
-
-            </div>
-
-
-            <div class="summary-row discount">
-
-                <span>
-                    優惠折扣
-                </span>
-
-                <span>
-                    - NT$0
-                </span>
-
-            </div>
-
-
-            <hr>
-
-
-            <div class="total-row">
-
-                <span>
-                    應付金額
-                </span>
-
-                <strong id="totalAmount">
-
-                    NT$ @(((ProductSpec)ViewBag.Spec).SpecsPrice * (int)ViewBag.Quantity + 60)
-
-                </strong>
-
-            </div>
-
-        </div>
-
-
-        <!-- 結帳 -->
-        <div class="checkout-action">
-
-            <button class="checkout-btn">
-                前往結帳
-            </button>
-
-        </div>
-
 
     </div>
 
-</div>
+</form>
 
 </div>
+
+
+<!-- =================================
+     JavaScript：數量
+================================== -->
+
 <script>
 
     const minusBtn =
@@ -468,6 +502,9 @@
 
     const quantityInput =
         document.getElementById("quantity");
+
+    const quantityHidden =
+        document.getElementById("quantityHidden");
 
     const subtotalElement =
         document.getElementById("subtotal");
@@ -489,7 +526,10 @@
         60;
 
 
+    // ==============================
     // 減少數量
+    // ==============================
+
     minusBtn.addEventListener("click", function() {
 
         let quantity =
@@ -502,6 +542,9 @@
             quantityInput.value =
                 quantity;
 
+            quantityHidden.value =
+                quantity;
+
             updateAmount();
 
         }
@@ -509,7 +552,10 @@
     });
 
 
+    // ==============================
     // 增加數量
+    // ==============================
+
     plusBtn.addEventListener("click", function() {
 
         let quantity =
@@ -520,12 +566,18 @@
         quantityInput.value =
             quantity;
 
+        quantityHidden.value =
+            quantity;
+
         updateAmount();
 
     });
 
 
+    // ==============================
     // 更新金額
+    // ==============================
+
     function updateAmount() {
 
         const quantity =
@@ -555,6 +607,11 @@
     }
 
 </script>
+
+
+<!-- =================================
+     JavaScript：縣市 / 區域
+================================== -->
 
 <script>
 
