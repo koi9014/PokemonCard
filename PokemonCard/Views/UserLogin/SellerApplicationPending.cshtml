@@ -1,0 +1,518 @@
+﻿@* ===== [賣家審核狀態頁新增開始] 整個檔案為新增的待審核／已通過共用頁面 ===== *@
+@{
+    Layout = null;
+    var isApproved = (ViewBag.ApplicationStatus as string) == "APPROVED";
+    ViewData["Title"] = isApproved ? "賣家資格審核通過" : "賣家資格審核中";
+}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - 日本限定寶可夢代購</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+            body {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                color: #fff;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+                overflow-x: hidden;
+                position: relative;
+                padding: 30px 0;
+            }
+
+            .review-card {
+                max-width: 550px;
+                width: 92%;
+                background: rgba(255, 255, 255, 0.96);
+                color: #212529;
+                border-radius: 24px;
+                padding: 2rem 1.8rem;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 203, 5, 0.3);
+                text-align: center;
+                position: relative;
+                z-index: 10;
+                backdrop-filter: blur(10px);
+                border: 3px solid #ffcb05;
+            }
+
+            .review-card.approved {
+                border-color: #66bb6a;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(102, 187, 106, 0.35);
+            }
+
+            .poke-marquee-container {
+                width: 100%;
+                overflow: hidden;
+                background: rgba(42, 117, 187, 0.08);
+                border-radius: 16px;
+                padding: 10px 0;
+                margin: 12px 0;
+                display: flex;
+            }
+
+            .poke-marquee {
+                display: flex;
+                align-items: center;
+                gap: 22px;
+                width: max-content;
+                animation: marquee 16s linear infinite;
+            }
+
+            .poke-marquee img {
+                height: 42px;
+                width: auto;
+                object-fit: contain;
+                filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+            }
+
+            @@keyframes marquee {
+                from { transform: translateX(0); }
+                to { transform: translateX(-50%); }
+            }
+
+            .animation-container {
+                position: relative;
+                height: 90px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 0.5rem;
+            }
+
+            .main-pika-gif {
+                height: 85px;
+                cursor: pointer;
+                transition: transform 0.2s;
+                filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+            }
+
+            .main-pika-gif:hover { transform: scale(1.1); }
+
+            .lightning-icon {
+                position: absolute;
+                font-size: 2.2rem;
+                color: #ffcb05;
+                filter: drop-shadow(0 0 6px #ffcb05);
+                animation: flash 1s infinite alternate;
+            }
+
+            .lightning-1 { top: 0; left: 20%; transform: rotate(-20deg); }
+            .lightning-2 { bottom: 5px; right: 20%; transform: rotate(15deg); }
+
+            .review-progress-container {
+                margin: 22px 0 18px;
+            }
+
+            /* ===== [賣家審核階段顯示新增開始] 取代循環假進度條 ===== */
+            .review-steps {
+                display: grid;
+                grid-template-columns: 86px 1fr 86px 1fr 86px;
+                align-items: start;
+                width: 100%;
+            }
+
+            .review-step {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 7px;
+                color: #8a939b;
+                font-size: 0.78rem;
+                font-weight: 700;
+                line-height: 1.25;
+            }
+
+            .review-step-circle {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid #cfd6dc;
+                background: #fff;
+                color: #8a939b;
+                font-size: 1rem;
+                position: relative;
+            }
+
+            .review-step.completed {
+                color: #2a75bb;
+            }
+
+            .review-step.completed .review-step-circle {
+                border-color: #2a75bb;
+                background: #2a75bb;
+                color: #fff;
+            }
+
+            /* ===== [平台審核中醒目提示新增開始] 紅色文字與閃動外圈代表正在審核 ===== */
+            .review-step.active {
+                color: #dc3545;
+            }
+
+            .review-step.active .review-step-circle {
+                border-color: #dc3545;
+                background: #dc3545;
+                color: #fff;
+                box-shadow: 0 0 0 5px rgba(220, 53, 69, 0.14);
+            }
+
+            .review-step.active .review-step-circle::after {
+                content: "";
+                position: absolute;
+                inset: -8px;
+                border: 3px solid rgba(220, 53, 69, 0.75);
+                border-radius: 50%;
+                pointer-events: none;
+                animation: review-ring-flash 1.4s ease-out infinite;
+            }
+
+            @@keyframes review-ring-flash {
+                0% {
+                    transform: scale(0.82);
+                    opacity: 0;
+                }
+
+                25% {
+                    opacity: 1;
+                }
+
+                100% {
+                    transform: scale(1.28);
+                    opacity: 0;
+                }
+            }
+            /* ===== [平台審核中醒目提示新增結束] ===== */
+
+            .review-step.success {
+                color: #43a047;
+            }
+
+            .review-step.success .review-step-circle {
+                border-color: #66bb6a;
+                background: #66bb6a;
+                color: #fff;
+                box-shadow: 0 0 0 6px rgba(102, 187, 106, 0.18);
+            }
+
+            .review-step-connector {
+                height: 4px;
+                margin-top: 17px;
+                border-radius: 999px;
+                background: #dce1e5;
+            }
+
+            .review-step-connector.completed {
+                background: #2a75bb;
+            }
+
+            .review-step-connector.success {
+                background: #66bb6a;
+            }
+
+            @@media (max-width: 430px) {
+                .review-steps {
+                    grid-template-columns: 72px 1fr 72px 1fr 72px;
+                }
+
+                .review-step {
+                    font-size: 0.7rem;
+                }
+            }
+            /* ===== [賣家審核階段顯示新增結束] ===== */
+
+            @@keyframes flash {
+                from { opacity: 0.3; transform: scale(0.8); }
+                to { opacity: 1; transform: scale(1.2); }
+            }
+
+            .poke-badge {
+                background-color: #ffcb05;
+                color: #2a75bb;
+                font-weight: 800;
+                padding: 0.4em 1.2em;
+                border-radius: 20px;
+                letter-spacing: 1px;
+                border: 2px solid #2a75bb;
+                display: inline-block;
+                box-shadow: 2px 2px 0 #2a75bb;
+            }
+
+            .review-status-box {
+                background-color: #f8f9fa;
+                border-left: 5px solid #2a75bb;
+                border-radius: 10px;
+                padding: 0.8rem 1rem;
+                text-align: left;
+                margin: 0.8rem 0 1rem;
+            }
+
+            .btn-poke {
+                background-color: #2a75bb;
+                color: #fff;
+                font-weight: 700;
+                border-radius: 25px;
+                padding: 0.6rem 1.5rem;
+                border: none;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 10px rgba(42, 117, 187, 0.3);
+            }
+
+            .btn-poke:hover {
+                background-color: #1c5083;
+                color: #fff;
+                transform: translateY(-2px);
+            }
+
+            .interactive-zone {
+                background-color: #0e1726;
+                border-radius: 16px;
+                padding: 1.2rem;
+                margin: 1.2rem 0 0.5rem;
+                box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            }
+
+            .whos-that-title {
+                color: #ffea3d;
+                font-size: 1.25rem;
+                font-weight: 900;
+                letter-spacing: 2px;
+                text-shadow: 2px 2px 0 #000;
+                line-height: 1.2;
+                margin-bottom: 12px;
+            }
+
+            .whos-that-title span {
+                display: block;
+                font-size: 1.45rem;
+                letter-spacing: 3px;
+            }
+
+            .classic-frame {
+                width: 140px;
+                height: 140px;
+                background-color: #27aee6;
+                border: 3.5px solid #fff;
+                position: relative;
+                margin: 0 auto 15px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 4px;
+            }
+
+            .classic-frame::before,
+            .classic-frame::after,
+            .frame-ball-bottom-left,
+            .frame-ball-bottom-right {
+                content: "";
+                position: absolute;
+                width: 22px;
+                height: 22px;
+                background-image: url("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png");
+                background-size: contain;
+                background-repeat: no-repeat;
+                z-index: 5;
+            }
+
+            .classic-frame::before { top: -11px; left: -11px; }
+            .classic-frame::after { top: -11px; right: -11px; }
+            .frame-ball-bottom-left { bottom: -11px; left: -11px; }
+            .frame-ball-bottom-right { bottom: -11px; right: -11px; }
+
+            .silhouette { filter: brightness(0) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3)) !important; }
+
+            .game-img {
+                height: 95px;
+                width: auto;
+                object-fit: contain;
+                transition: filter 0.4s ease;
+                display: block;
+                margin: 0 auto;
+            }
+    </style>
+</head>
+<body>
+    <main class="review-card @(isApproved ? "approved" : string.Empty)">
+        <div class="poke-marquee-container" aria-hidden="true">
+            <div class="poke-marquee">
+                @foreach (var ball in new[] { "poke", "great", "ultra", "master", "safari", "net", "dive", "luxury", "quick", "dusk", "poke", "great", "ultra", "master", "safari", "net", "dive", "luxury", "quick", "dusk" })
+                {
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/@(ball)-ball.png" alt="">
+                }
+            </div>
+        </div>
+
+        <div class="animation-container">
+            <i class="bi bi-lightning-charge-fill lightning-icon lightning-1"></i>
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/25.gif"
+                 class="main-pika-gif" id="pikaBtn" title="點點皮卡丘！" alt="皮卡丘">
+            <i class="bi bi-lightning-fill lightning-icon lightning-2"></i>
+        </div>
+
+        <div class="mb-2"><span class="poke-badge mb-2">@(isApproved ? "SELLER APPROVED" : "SELLER REVIEW")</span></div>
+        <h1 class="h4 fw-bold mb-2 text-dark">@(isApproved ? "已通過審核" : "平台審核中")</h1>
+        <p class="text-muted small mb-1">
+            @(isApproved
+                ? "恭喜您，賣家資格申請已通過平台審核。"
+                : "您的賣家資格申請已成功送出，平台正在確認申請資料與身分證明。")
+        </p>
+
+        @* ===== [賣家審核階段顯示新增開始] 清楚呈現目前所在階段 ===== *@
+        <div class="review-progress-container" aria-label="@(isApproved ? "賣家申請審核完成" : "賣家申請平台審核中")">
+            <div class="review-steps">
+                <div class="review-step completed">
+                    <div class="review-step-circle"><i class="bi bi-check-lg"></i></div>
+                    <span>申請已送出</span>
+                </div>
+
+                <div class="review-step-connector completed"></div>
+
+                <div class="review-step completed @(!isApproved ? "active" : string.Empty)">
+                    <div class="review-step-circle">
+                        <i class="bi @(isApproved ? "bi-check-lg" : "bi-hourglass-split")"></i>
+                    </div>
+                    <span>平台審核中</span>
+                </div>
+
+                <div class="review-step-connector @(isApproved ? "success" : string.Empty)"></div>
+
+                <div class="review-step @(isApproved ? "success" : string.Empty)">
+                    <div class="review-step-circle">
+                        <i class="bi @(isApproved ? "bi-check-lg" : "bi-circle")"></i>
+                    </div>
+                    <span>審核完成</span>
+                </div>
+            </div>
+        </div>
+        @* ===== [賣家審核階段顯示新增結束] ===== *@
+
+        <div class="review-status-box shadow-sm">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi @(isApproved ? "bi-patch-check-fill text-success" : "bi-hourglass-split text-primary") fs-5"></i>
+                <strong class="text-dark">目前狀態</strong>
+            </div>
+            <div class="fw-bold @(isApproved ? "text-success" : "text-primary") ps-4">@(isApproved ? "已通過平台審核" : "等待管理員審核")</div>
+            <div class="small text-muted ps-4 mt-1">
+                @(isApproved ? "您已取得賣家資格。" : "審核完成或需要補件時，申請狀態將會更新。")
+            </div>
+        </div>
+
+        @if (!isApproved)
+        {
+            <button type="button" onclick="checkStatus(event)"
+                    class="btn btn-poke w-100 mb-2 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>重新檢查審核狀態</span>
+            </button>
+        }
+
+        <a href="@Url.Action("Index", "Home")" class="btn btn-link text-secondary text-decoration-none small">返回首頁</a>
+
+        <section class="interactive-zone" aria-label="猜寶可夢小遊戲">
+            <div class="whos-that-title">？ ？ ？ ？<span>我是誰</span></div>
+            <div class="classic-frame">
+                <div class="frame-ball-bottom-left"></div>
+                <div class="frame-ball-bottom-right"></div>
+                <img id="guess-img" src="" class="game-img silhouette" alt="猜猜這是哪隻寶可夢">
+            </div>
+            <div class="input-group input-group-sm mb-2 mx-auto" style="max-width: 280px;">
+                <input type="text" id="guess-input" class="form-control text-center fw-bold"
+                       placeholder="輸入寶可夢中文名稱" onkeypress="handleKeyPress(event)">
+                <button type="button" onclick="submitGuess()" class="btn btn-warning fw-bold text-dark px-3">送出</button>
+            </div>
+            <div class="d-flex justify-content-center gap-2 mb-2">
+                <button type="button" onclick="revealAnswer()" class="btn btn-outline-warning btn-sm text-warning fw-bold">💡 看答案</button>
+                <button type="button" onclick="startGuessGame()" class="btn btn-outline-light btn-sm fw-bold">🔄 換一題</button>
+            </div>
+            <div id="guess-result" class="small fw-bold mt-1"></div>
+        </section>
+
+        <div class="poke-marquee-container" aria-hidden="true">
+            <div class="poke-marquee" style="animation-direction: reverse;">
+                @foreach (var pokemonId in new[] { 25, 4, 7, 1, 133, 94, 143, 150, 39, 54, 25, 4, 7, 1, 133, 94, 143, 150, 39, 54 })
+                {
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/@(pokemonId).gif" alt="">
+                }
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+            const sellerApplicationUrl = '@Url.Action("SellerApplicationPending", "UserLogin")';
+            let currentPokemonNameZh = '';
+
+            window.addEventListener('load', startGuessGame);
+            document.getElementById('pikaBtn').addEventListener('click', () => alert('皮卡丘：Pika Pika! ⚡'));
+
+            function checkStatus(e) {
+                const btn = e.currentTarget;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> 狀態確認中...';
+                btn.disabled = true;
+                window.setTimeout(() => { window.location.href = sellerApplicationUrl; }, 700);
+            }
+
+            async function startGuessGame() {
+                const img = document.getElementById('guess-img');
+                const result = document.getElementById('guess-result');
+                const input = document.getElementById('guess-input');
+                input.value = '';
+                result.innerHTML = '<span class="text-light opacity-75">題目載入中...</span>';
+                img.classList.add('silhouette');
+                const randomId = Math.floor(Math.random() * 649) + 1;
+
+                try {
+                    const speciesRes = await fetch('https://pokeapi.co/api/v2/pokemon-species/' + randomId + '/');
+                    const speciesData = await speciesRes.json();
+                    const zhObj = speciesData.names.find(n => n.language.name === 'zh-hant' || n.language.name === 'zh-Hans');
+                    if (!zhObj || !zhObj.name) return startGuessGame();
+
+                    currentPokemonNameZh = zhObj.name.trim();
+                    const pokemonRes = await fetch('https://pokeapi.co/api/v2/pokemon/' + randomId + '/');
+                    const pokemonData = await pokemonRes.json();
+                    img.src = pokemonData.sprites.versions['generation-v']['black-white'].animated.front_default
+                        || pokemonData.sprites.front_default;
+                    result.innerHTML = '<span class="text-warning">它是哪隻寶可夢？輸入中文名稱猜猜看！</span>';
+                } catch (error) {
+                    console.error(error);
+                    result.innerHTML = '<span class="text-danger">題目載入失敗，請點擊「換一題」！</span>';
+                }
+            }
+
+            function submitGuess() {
+                const input = document.getElementById('guess-input').value.trim();
+                const img = document.getElementById('guess-img');
+                const result = document.getElementById('guess-result');
+                if (!input || !currentPokemonNameZh) return;
+
+                if (input === currentPokemonNameZh || currentPokemonNameZh.includes(input)) {
+                    img.classList.remove('silhouette');
+                    result.innerHTML = '<span class="text-warning">🎉 答對了！這是 <strong>'
+                        + currentPokemonNameZh + '</strong>！</span>';
+                } else {
+                    result.innerHTML = '<span class="text-danger">❌ 猜錯囉！再試一次，或點擊「看答案」！</span>';
+                }
+            }
+
+            function revealAnswer() {
+                if (!currentPokemonNameZh) return;
+                document.getElementById('guess-img').classList.remove('silhouette');
+                document.getElementById('guess-result').innerHTML = '<span class="text-light">💡 答案是：<strong class="text-warning">'
+                    + currentPokemonNameZh + '</strong>！</span>';
+            }
+
+            function handleKeyPress(e) {
+                if (e.key === 'Enter') submitGuess();
+            }
+    </script>
+</body>
+</html>
+@* ===== [賣家審核狀態頁新增結束] ===== *@

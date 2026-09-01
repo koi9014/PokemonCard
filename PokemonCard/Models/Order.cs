@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PokemonCard.Models;
 
@@ -93,4 +94,29 @@ public partial class Order
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual Seller Seller { get; set; } = null!;
+
+   
+}
+
+public class RecentOrderViewModel
+{
+    public int OrderId { get; set; }
+    public string OrderNo { get; set; }
+    public string BuyerName { get; set; }
+    public string FirstProductName { get; set; }
+    public decimal OrderAmount { get; set; }
+    public string OrderStatus { get; set; }
+}
+
+public class SellerDashboardViewModel
+{
+    public int TodayNewOrders { get; set; }
+    public decimal TotalSales { get; set; }
+    public int TotalOrders { get; set; }
+    public decimal AvgOrderValue { get; set; }
+    public decimal MonthlyCreditedAmount { get; set; }
+    public int PendingShipments { get; set; }
+    public string TotalRevenueDisplay { get; set; } = "0";
+    public string GrowthRate { get; set; } = "0";
+    public List<RecentOrderViewModel> RecentOrders { get; set; } = new List<RecentOrderViewModel>();
 }

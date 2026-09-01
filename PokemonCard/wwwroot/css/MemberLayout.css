@@ -1,0 +1,312 @@
+﻿:root {
+    --primary: #EF5350;
+    --primary-hover: #E53935;
+    --tertiary: #42A5F5;
+    --surface: #f4faff;
+    --text: #0d1e25;
+    --text-muted: #5a413f;
+    --border: #e2bebb;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background-color: var(--surface);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================
+   Header
+   ========================= */
+
+.member-header {
+    height: 80px;
+    background-color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030;
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+}
+
+.member-header-inner {
+    height: 80px;
+}
+
+.member-logo {
+    height: 64px;
+    width: auto;
+    object-fit: contain;
+}
+
+.member-logo-text {
+    color: #FFDE00;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.member-search {
+    max-width: 420px;
+    width: 100%;
+}
+
+.member-search-box {
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    background-color: #fff;
+    overflow: hidden;
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .04);
+}
+
+    .member-search-box .form-control {
+        border: none;
+        box-shadow: none;
+    }
+
+        .member-search-box .form-control:focus {
+            border: none;
+            box-shadow: none;
+        }
+
+.member-search-icon {
+    color: var(--tertiary);
+    font-size: 20px;
+}
+
+.member-filter-button {
+    border: none;
+    background-color: transparent;
+    color: var(--tertiary);
+}
+
+    .member-filter-button:hover {
+        background-color: rgba(66, 165, 245, .08);
+        color: var(--tertiary);
+    }
+
+.member-search-button {
+    width: 48px;
+    height: 100%;
+    border: none;
+    background-color: var(--tertiary);
+    color: #fff;
+}
+
+    .member-search-button:hover {
+        background-color: #1E88E5;
+    }
+
+.member-header-link {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-decoration: none;
+    transition: .2s;
+}
+
+    .member-header-link:hover {
+        color: var(--tertiary);
+    }
+
+.member-header-icon {
+    color: var(--tertiary);
+    font-size: 20px;
+    text-decoration: none;
+}
+
+    .member-header-icon:hover {
+        color: #1E88E5;
+        background-color: #f1f8ff;
+        border-radius: 8px;
+    }
+
+.member-header-divider {
+    height: 28px;
+    border-left: 1px solid var(--border);
+}
+
+.member-login {
+    color: var(--tertiary);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 8px 12px;
+}
+
+    .member-login:hover {
+        color: #1E88E5;
+        background-color: rgba(66, 165, 245, .08);
+        border-radius: 8px;
+    }
+
+.member-register {
+    padding: 9px 20px;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: .2s;
+}
+
+    .member-register:hover {
+        background-color: var(--primary-hover);
+        color: #fff;
+    }
+
+.member-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* =========================
+   Main
+   ========================= */
+
+.member-main {
+    width: min(calc(100vw - 2rem), 1700px);
+    margin-left: 50%;
+    padding-block: 1.5rem;
+    transform: translateX(-50%);
+}
+
+    .member-main a {
+        text-decoration: none;
+    }
+
+/* =========================
+   賣家頁
+   ========================= */
+
+/* 賣家頁需要同時容納側邊選單與較寬的管理表單／表格。 */
+.seller-member-main {
+    width: min(calc(100vw - 2rem), 1700px);
+    margin-left: 50%;
+    padding-block: 1.5rem;
+    transform: translateX(-50%);
+}
+
+.seller-sidebar {
+    width: 80%;
+    margin-inline: auto;
+    padding-block: 2rem !important;
+    text-align: center;
+}
+
+    .seller-sidebar .list-group-item {
+        text-align: center;
+        padding: .8rem .65rem;
+        font-size: 1.05rem;
+    }
+
+    .seller-sidebar .list-group {
+        width: 100%;
+    }
+
+    .seller-sidebar h5 {
+        text-align: left;
+        font-size: 1.15rem;
+    }
+
+/* 僅放大賣家總覽與營收明細的閱讀字級。 */
+.seller-revenue h1,
+.seller-dashboard h1 {
+    font-size: 1.75rem !important;
+}
+
+.seller-revenue .text-sm,
+.seller-dashboard .text-body-sm {
+    font-size: .95rem !important;
+    line-height: 1.45 !important;
+}
+
+.seller-revenue .text-xs,
+.seller-dashboard .text-label-bold {
+    font-size: .8rem !important;
+}
+
+.seller-dashboard .text-title-md {
+    font-size: 1.35rem !important;
+}
+
+.seller-dashboard .font-price-display {
+    font-size: 1.7rem !important;
+}
+
+.seller-member-main .col-lg-9 {
+    min-width: 0;
+}
+
+
+/* =========================
+   Footer
+   ========================= */
+
+.member-footer {
+    width: 100%;
+    background-color: #f1f3f5;
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+}
+
+.member-footer-logo {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(1);
+    opacity: .7;
+}
+
+.member-footer-title {
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.member-footer-text {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.member-footer-heading {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.member-footer-link {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-decoration: none;
+}
+
+    .member-footer-link:hover {
+        color: var(--tertiary);
+    }
+
+.member-footer-bottom {
+    max-width: 1280px;
+    margin: 32px auto 0;
+    padding: 24px 32px 0;
+    border-top: 1px solid rgba(226, 190, 187, .3);
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+}

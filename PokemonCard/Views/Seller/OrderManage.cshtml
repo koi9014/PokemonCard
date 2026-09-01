@@ -1,0 +1,114 @@
+@model PokemonCard.Controllers.SellerOrderManageViewModel
+@{
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
+    string StatusText(string status) => status switch
+    {
+        "PENDING" => "待付款",
+        "PAID" => "已付款",
+        "PROCESSING" or "Processing" => "待出貨",
+        "SHIPPED" => "已出貨",
+        "COMPLETED" => "已完成",
+        "CANCELLED" => "已取消",
+        _ => status
+    };
+    string StatusClass(string status) => status switch
+    {
+        "SHIPPED" => "bg-blue-50 text-blue-700",
+        "COMPLETED" => "bg-green-50 text-green-700",
+        "CANCELLED" => "bg-red-50 text-red-700",
+        _ => "bg-amber-50 text-amber-700"
+    };
+    string PageUrl(int page) => Url.Action("OrderManage", new { search = Model.Search, status = Model.Status, page }) ?? "#";
+    var canManageOrders = Model.Status is not ("COMPLETED" or "SHIPPED" or "CANCELLED");
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+<div class="bg-[#f4faff] p-4 font-['Inter'] text-[#0d1e25] md:p-8">
+    <main class="mx-auto w-full max-w-6xl">
+        <h1 class="mb-5 text-2xl font-bold">訂單管理</h1>
+        <div class="rounded-xl border border-[#e2bebb] bg-white p-6 shadow-sm">
+            @if (TempData["SuccessMessage"] is string successMessage)
+            {
+                <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">@successMessage</div>
+            }
+            @if (TempData["ErrorMessage"] is string errorMessage)
+            {
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">@errorMessage</div>
+            }
+
+            <form method="get" action="@Url.Action("OrderManage", "Seller")" class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input type="hidden" name="status" value="@Model.Status" />
+                <div class="relative w-full sm:max-w-md">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#5a413f]">search</span>
+                    <input name="search" value="@Model.Search" class="w-full rounded-lg border border-[#e2bebb] bg-[#f8fbfd] py-2 pl-10 pr-4 outline-none focus:border-[#42a5f5]" placeholder="訂單編號、買家帳號、姓名或手機" />
+                </div>
+                <button type="submit" class="rounded-lg border border-[#e2bebb] bg-[#eef5f9] px-5 py-2 font-semibold text-[#0d1e25]">搜尋</button>
+                <a href="@Url.Action("OrderManage", "Seller")" class="rounded-lg border border-[#42a5f5] bg-white px-5 py-2 text-center font-semibold text-[#00609a]">全部訂單</a>
+            </form>
+
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-4 flex justify-end gap-3">
+                    <button type="submit" formaction="@Url.Action("ShipOrders", "Seller")" disabled="@(!canManageOrders)" class="flex items-center gap-2 rounded-lg bg-[#126d27] px-5 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
+                        <span class="material-symbols-outlined text-[18px]">local_shipping</span>執行出貨
+                    </button>
+                    <button type="submit" formaction="@Url.Action("MergeOrders", "Seller")" disabled="@(!canManageOrders)" onclick="return confirm('合併後會保留日期最早的訂單編號，並將其餘訂單明細與金額移入該訂單。確定要合併嗎？');" class="flex items-center gap-2 rounded-lg border border-[#42a5f5] bg-white px-5 py-2 text-sm font-bold text-[#00609a] disabled:cursor-not-allowed disabled:opacity-40">
+                        <span class="material-symbols-outlined text-[18px]">call_merge</span>訂單合併
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[760px] border-collapse text-left">
+                        <thead>
+                            <tr class="border-y border-[#e2bebb] bg-[#eef5f9] text-sm text-[#5a413f]">
+                                <th class="w-12 px-4 py-3"><input id="select-all" type="checkbox" class="h-4 w-4" aria-label="全選訂單" /></th>
+                                <th class="px-4 py-3">訂單編號</th>
+                                <th class="px-4 py-3">買家帳號</th>
+                                <th class="px-4 py-3 text-right">金額</th>
+                                <th class="px-4 py-3 text-center">狀態</th>
+                                <th class="px-4 py-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#e2bebb]/60 text-sm">
+                            @if (Model.Items.Any())
+                            {
+                                foreach (var item in Model.Items)
+                                {
+                                    <tr class="hover:bg-[#f8fbfd]">
+                                        <td class="px-4 py-4"><input name="selectedOrderIds" value="@item.OrderId" type="checkbox" class="order-checkbox h-4 w-4" /></td>
+                                        <td class="px-4 py-4 font-semibold">@item.OrderNo</td>
+                                        <td class="px-4 py-4">@item.Username</td>
+                                        <td class="px-4 py-4 text-right font-bold">NT$ @item.OrderAmount.ToString("N0")</td>
+                                        <td class="px-4 py-4 text-center"><span class="inline-flex rounded-full px-3 py-1 text-xs font-bold @StatusClass(item.OrderStatus)">@StatusText(item.OrderStatus)</span></td>
+                                        <td class="px-4 py-4 text-right"><button type="button" class="font-semibold text-[#00609a] hover:text-[#0079c1]">詳情</button></td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="6" class="px-4 py-10 text-center text-[#5a413f]">查無訂單資料</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#e2bebb] pt-4 text-sm text-[#5a413f]">
+                <span>顯示 @((Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1)) 至 @Math.Min(Model.Page * Model.PageSize, Model.TotalCount) 筆，共 @Model.TotalCount 筆</span>
+                <div class="flex items-center gap-2">
+                    <a href="@PageUrl(Math.Max(1, Model.Page - 1))" class="rounded border border-[#e2bebb] px-3 py-1.5 @(Model.Page == 1 ? "pointer-events-none opacity-40" : "")">上一頁</a>
+                    <span>第 @Model.Page / @Model.TotalPages 頁</span>
+                    <a href="@PageUrl(Math.Min(Model.TotalPages, Model.Page + 1))" class="rounded border border-[#e2bebb] px-3 py-1.5 @(Model.Page == Model.TotalPages ? "pointer-events-none opacity-40" : "")">下一頁</a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const selectAll = document.getElementById('select-all');
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    selectAll?.addEventListener('change', () => orderCheckboxes.forEach(checkbox => checkbox.checked = selectAll.checked));
+</script>

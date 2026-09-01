@@ -1,0 +1,90 @@
+@{
+    ViewData["Title"] = "會員登入";
+}
+
+<div class="max-w-md mx-auto mt-4">
+
+    <!-- 卡片 -->
+    <div class="bg-white rounded-xl shadow-md border border-[#e2bebb]/50 overflow-hidden">
+
+        <!-- 標題列 -->
+        <div class="p-6 text-center">
+            <div class="mx-auto w-16 h-16 rounded-full bg-[#42A5F5]/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-[#42A5F5] text-[32px]">login</span>
+            </div>
+            <h1 class="mt-4 text-2xl font-extrabold text-[#0d1e25]">會員登入</h1>
+            <p class="mt-2 text-sm text-[#5a413f]">歡迎回來，請登入您的帳號</p>
+        </div>
+
+        
+
+        <!-- 表單 -->
+        <form class="px-6 py-4 flex flex-col gap-5" method="post" action="/UserLogin/Login">
+            @Html.AntiForgeryToken()
+
+            <!-- 信箱 -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-[#0d1e25]" for="email">
+                    信箱 <span class="text-[#EF5350]">*</span>
+                </label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">mail</span>
+                    <input id="email" name="email" type="email" required
+                        class="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
+                        placeholder="example@email.com">
+                </div>
+            </div>
+
+            <!-- 密碼 -->
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm font-bold text-[#0d1e25]" for="password">
+                        密碼 <span class="text-[#EF5350]">*</span>
+                    </label>
+                    <a class="text-xs font-medium text-[#42A5F5] hover:underline" href="#">忘記密碼？</a>
+                </div>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#5a413f] text-[18px]">lock</span>
+                    <input id="password" name="password" type="password" required
+                        class="w-full pl-12 pr-12 py-3 rounded-lg bg-white border border-[#e2bebb] focus:outline-none focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all"
+                        placeholder="請輸入密碼">
+                    <button type="button" onclick="togglePassword('password', this)"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-[#5a413f] hover:text-[#42A5F5]">
+                        <span class="material-symbols-outlined text-[18px]">visibility</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 顯示錯誤訊息 -->
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div style="color: red; font-weight: bold; padding: 10px; border: 1px solid red;">
+                    @ViewBag.ErrorMessage
+                </div>
+            }
+
+            <!-- 登入按鈕 -->
+            <button type="submit"
+                class="w-full py-3.5 rounded-lg bg-[#EF5350] text-white text-base font-bold shadow-sm hover:bg-[#E53935] hover:shadow-md flex items-center justify-center gap-2 transition-all">
+                <span class="material-symbols-outlined text-[20px]">login</span>
+                登入
+            </button>
+        </form>
+
+        <!-- 沒有帳號 -->
+        <div class="px-6 py-4 border-t border-[#e2bebb]/30 text-center text-sm text-[#5a413f]">
+            還沒有帳號？
+            <a class="text-[#42A5F5] font-bold hover:underline" href="/UserLogin/Register">立即註冊</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        btn.querySelector('.material-symbols-outlined').textContent = isHidden ? 'visibility_off' : 'visibility';
+    }
+</script>

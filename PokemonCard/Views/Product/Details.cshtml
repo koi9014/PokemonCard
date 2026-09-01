@@ -1,0 +1,728 @@
+﻿@model PokemonCard.Models.Product
+
+
+@{
+    ViewData["Title"] = "商品詳細資訊";
+}
+
+<link rel="stylesheet" href="~/css/Details.css">
+
+
+
+<div class="container py-4">
+
+
+    <!-- ========================== ===========
+         商品主要區域
+    ====================================== -->
+
+    <div class="row g-5">
+
+
+        <!-- =================================
+             左側：商品圖片輪播
+        ================================== -->
+
+        <div class="col-lg-6">
+
+            <!-- 商品圖片區 -->
+
+            <div id="productCarousel"
+                 class="carousel slide product-carousel"
+                 data-bs-touch="true"
+                 data-bs-interval="false">
+
+                <div class="carousel-inner">
+
+                    @{
+                        int imageIndex = 0;
+                    }
+
+                    @foreach(var image in Model.ProductImages.OrderBy(x => x.ImageOrder))
+                    {
+                        <div class="carousel-item @(imageIndex == 0 ? "active" : "")">
+
+                            <img src="@image.ImageUrl"
+                                 alt="@Model.ProductName 商品圖片 @(imageIndex + 1)">
+
+                        </div>
+
+                        imageIndex++;
+                    }
+
+                </div>
+
+
+                <button class="carousel-control-prev"
+                        type="button"
+                        data-bs-target="#productCarousel"
+                        data-bs-slide="prev">
+
+                    <span class="carousel-control-prev-icon"></span>
+
+                </button>
+
+
+                <button class="carousel-control-next"
+                        type="button"
+                        data-bs-target="#productCarousel"
+                        data-bs-slide="next">
+
+                    <span class="carousel-control-next-icon"></span>
+
+                </button>
+
+            </div>
+
+
+            <!-- ⭐ 注意：這裡已經在 product-carousel 外面 -->
+
+            <div class="product-indicators">
+
+                @for(int i = 0; i < Model.ProductImages.Count; i++)
+                {
+                    <button type="button"
+                            data-bs-target="#productCarousel"
+                            data-bs-slide-to="@i"
+                            class="@(i == 0 ? "active" : "")"
+                            aria-label="商品圖片 @(i + 1)">
+                    </button>
+                }
+
+            </div>
+
+
+
+
+        </div>
+
+
+
+        <!-- =================================
+             右側：商品資訊
+        ================================== -->
+
+        <div class="col-lg-6">
+
+
+            <!-- 商品分類 -->
+
+            <div class="mb-3">
+
+                <span class="badge bg-info text-dark px-3 py-2">
+                    @Model.ProductType
+                </span>
+
+            </div>
+
+
+            <!-- 商品名稱 -->
+
+            <h1 class="product-title mb-3">
+
+                @Model.ProductName
+
+            </h1>
+
+
+
+            <!-- ==========================
+     商品規格
+========================== -->
+
+            <div class="mb-4">
+
+
+                @foreach(var item in Model.ProductSpecs)
+                {
+<button type="button"
+        class="product-option @(item == Model.ProductSpecs.FirstOrDefault() ? "active" : "")"
+        data-price="@item.SpecsPrice"
+        data-stock="@item.Stock"
+        data-specification-id="@item.SpecificationId">
+
+    <span class="option-name">
+        @item.SpecsCategory1
+    </span>
+
+    <span class="option-price">
+        NT$ @item.SpecsPrice
+    </span>
+
+</button>
+
+                }
+               
+            </div>
+            <!-- 價格 -->
+
+            <div class="product-info-box mb-4">
+
+                <div class="text-muted mb-1">
+                    售價
+                </div>
+
+                <div class="product-price" id="productPrice">
+
+                    NT$ @Model.ProductSpecs.FirstOrDefault( )?.SpecsPrice
+
+                </div>
+
+            </div>
+
+
+
+            <!-- 數量 -->
+
+            <div class="mb-4">
+
+                <label class="form-label fw-bold">
+                    購買數量
+                </label>
+
+
+                <div class="input-group quantity-box">
+
+                    <button class="btn btn-outline-secondary"
+                            type="button"
+                            onclick="decreaseQuantity()">
+                        −
+                    </button>
+
+                    <input id="quantity"
+                           name="quantity"
+                           type="number"
+                           class="form-control text-center"
+                           value="1"
+                           min="1"
+                           max="1"
+                           readonly>
+
+                    <button class="btn btn-outline-secondary"
+                            type="button"
+                            onclick="increaseQuantity()">
+                        ＋
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- 購物按鈕 -->
+
+            <div class="row g-2 mb-4">
+
+
+                <div class="col-6">
+
+                    <button type="button"
+                            class="btn btn-cart w-100 py-2">
+
+                        <span class="material-symbols-outlined align-middle">
+                            shopping_cart
+                        </span>
+
+                        加入購物車
+
+                    </button>
+
+                </div>
+
+
+                <div class="col-6">
+                    <form asp-controller="Checkout"
+                          asp-action="Index"
+                          method="get">
+
+                        <!-- 商品 ID -->
+                        <input type="hidden"
+                               name="productId"
+                               value="@Model.ProductId" />
+
+                        <!-- 規格 ID -->
+                        <input type="hidden"
+                               id="specificationId"
+                               name="specificationId"
+                               value="@Model.ProductSpecs.FirstOrDefault( )?.SpecificationId" />
+
+                        <!-- 購買數量 -->
+                        <input type="hidden"
+                               id="checkoutQuantity"
+                               name="quantity"
+                               value="1" />
+
+                        <button type="submit"
+                                class="btn btn-buy w-100 py-2">
+                            立即購買
+                        </button>
+
+                    </form>
+                </div>
+
+            </div>
+
+
+            <!-- 商品基本資訊 -->
+
+            <div class="row text-muted small">
+
+
+                <div class="col-6 mb-3">
+
+                    <strong>
+                        商品狀態
+                    </strong>
+
+                    <br>
+
+                    現貨
+
+                </div>
+
+
+                <div class="col-6 mb-3">
+
+                    <strong>
+                        估計配送
+                    </strong>
+
+                    <br>
+
+                    7 - 14 天
+
+                </div>
+
+
+                
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================
+         賣家資訊
+    ====================================== -->
+
+    <div class="seller-card mt-5">
+
+
+        <div class="row align-items-center">
+
+
+            <!-- 賣家頭像 -->
+
+            <div class="col-auto">
+
+                <img src="@Model.Seller.User.Avatar"
+                     class="seller-avatar"
+                     alt="賣家頭像">
+
+            </div>
+
+
+            <!-- 賣家資訊 -->
+
+            <div class="col">
+
+                <div class="seller-name">
+
+                    @Model.Seller.StoreName
+
+                </div>
+
+
+                <div class="rating">
+
+                    ★★★★★
+
+                    <span class="text-muted">
+                        5.0
+                    </span>
+
+                </div>
+
+
+                <div class="text-muted small">
+
+                    @Model.Seller.StoreDescription
+
+                </div>
+
+            </div>
+
+
+            <!-- 評價 -->
+
+            <div class="col-md-auto text-center mt-3 mt-md-0">
+
+                <div class="fw-bold fs-5">
+
+                    128
+
+                </div>
+
+                <div class="text-muted small">
+
+                    評價
+
+                </div>
+
+            </div>
+
+
+            <!-- 賣家商品 -->
+
+            <div class="col-md-auto mt-3 mt-md-0">
+
+                <a asp-controller="Seller"
+                   asp-action="MyStore"
+                   asp-route-sellerId="@Model.Seller.UserId"
+                   class="btn btn-outline-warning">
+                    查看賣家商品
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================
+         商品詳細說明
+    ====================================== -->
+
+    <div class="mt-5">
+
+
+        <h3 class="fw-bold mb-3">
+
+            商品詳細說明
+
+        </h3>
+
+
+        <div class="detail-box">
+
+            @Model.Description
+
+
+        </div>
+
+    </div>
+
+<!-- =====================================
+     商品圖片放大 Modal
+====================================== -->
+
+<div class="modal fade"
+     id="imageModal"
+     tabindex="-1"
+     aria-hidden="true">
+
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+
+        <div class="modal-content">
+
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    商品圖片
+                </h5>
+
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <div class="modal-body text-center">
+
+                <img id="modalProductImage"
+                     src=""
+                     class="img-fluid"
+                     alt="商品圖片">
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+
+<!-- =====================================
+     JavaScript
+====================================== -->
+
+<script>
+
+    // ==========================
+    // 數量增加
+    // ==========================
+
+    function increaseQuantity() {
+
+        const input =
+            document.getElementById("quantity");
+
+        let quantity =
+            parseInt(input.value);
+
+        quantity++;
+
+        input.value = quantity;
+    }
+
+
+    // ==========================
+    // 數量減少
+    // ==========================
+
+    function decreaseQuantity() {
+
+        const input =
+            document.getElementById("quantity");
+
+        let quantity =
+            parseInt(input.value);
+
+        if (quantity > 1) {
+
+            quantity--;
+
+        }
+
+        input.value = quantity;
+    }
+
+
+    // ==========================
+    // 圖片放大
+    // ==========================
+
+    document
+        .querySelectorAll("#productCarousel img")
+        .forEach(function(image) {
+
+            image.addEventListener("click", function() {
+
+                const modalImage =
+                    document.getElementById("modalProductImage");
+
+                modalImage.src =
+                    this.src;
+
+            });
+
+        });
+            const productCarousel =
+            document.getElementById("productCarousel");
+
+        const productIndicators =
+            document.querySelectorAll(
+                ".product-indicators button"
+            );
+
+
+        productCarousel.addEventListener(
+            "slid.bs.carousel",
+            function(event) {
+
+                // 移除所有 active
+                productIndicators.forEach(function(button) {
+
+                    button.classList.remove("active");
+
+                });
+
+
+                // 設定目前圖片的 indicator
+                if (productIndicators[event.to]) {
+
+                    productIndicators[event.to]
+                        .classList.add("active");
+
+                }
+
+            }
+        );
+
+
+</script>
+
+<script>
+
+    // ==========================
+    // 商品規格 / 價格切換
+    // ==========================
+
+    document
+        .querySelectorAll(".product-option")
+        .forEach(function(option) {
+
+            option.addEventListener("click", function() {
+
+                // 移除其他規格的 active
+                document
+                    .querySelectorAll(".product-option")
+                    .forEach(function(item) {
+
+                        item.classList.remove("active");
+
+                    });
+
+
+                // 設定目前規格
+                this.classList.add("active");
+
+
+                // 取得價格
+                const price =
+                    parseInt(this.dataset.price);
+
+
+                // 更新價格
+                document.getElementById("productPrice")
+                    .textContent =
+                    "NT$ " + price.toLocaleString();
+
+            });
+
+        });
+
+</script>
+
+<script>
+    function increaseQuantity() {
+        const input = document.getElementById("quantity");
+
+        let quantity = parseInt(input.value) || 1;
+        const max = parseInt(input.max);
+
+        if (quantity < max) {
+            input.value = quantity + 1;
+        }
+    }
+
+    function decreaseQuantity() {
+        const input = document.getElementById("quantity");
+
+        let quantity = parseInt(input.value) || 1;
+        const min = parseInt(input.min);
+
+        if (quantity > min) {
+            input.value = quantity - 1;
+        }
+    }
+        // 選擇規格
+    document.querySelectorAll(".product-option").forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            // 移除其他規格 active
+            document.querySelectorAll(".product-option")
+                .forEach(function (btn) {
+                    btn.classList.remove("active");
+                });
+
+            // 設定目前規格
+            this.classList.add("active");
+
+            // 取得規格資料
+            const price = parseInt(this.dataset.price) || 0;
+            const stock = parseInt(this.dataset.stock) || 0;
+            const specificationId =
+                this.dataset.specificationId;
+
+            // 更新價格
+            document.getElementById("productPrice")
+                .textContent =
+                "NT$ " + price.toLocaleString();
+
+            // 更新數量最大值
+            const quantity =
+                document.getElementById("quantity");
+
+            quantity.max = stock;
+
+            quantity.value = stock > 0 ? 1 : 0;
+
+            // 更新要送到 Checkout 的規格 ID
+            document.getElementById("specificationId")
+                .value = specificationId;
+
+            // 更新要送到 Checkout 的數量
+            document.getElementById("checkoutQuantity")
+                .value = quantity.value;
+
+        });
+
+    });
+
+
+    // 增加數量
+    function increaseQuantity() {
+
+        const input =
+            document.getElementById("quantity");
+
+        let current =
+            parseInt(input.value) || 1;
+
+        const max =
+            parseInt(input.max) || 1;
+
+        if (current < max) {
+
+            current++;
+
+            input.value = current;
+
+            document.getElementById("checkoutQuantity")
+                .value = current;
+        }
+    }
+
+
+    // 減少數量
+    function decreaseQuantity() {
+
+        const input =
+            document.getElementById("quantity");
+
+        let current =
+            parseInt(input.value) || 1;
+
+        const min =
+            parseInt(input.min) || 1;
+
+        if (current > min) {
+
+            current--;
+
+            input.value = current;
+
+            document.getElementById("checkoutQuantity")
+                .value = current;
+        }
+    }
+
+</script>
+
