@@ -99,6 +99,10 @@ namespace PokemonCard. Controllers
             }
 
             var userId = int. Parse(userIdString);
+            var sellerId = await _context. Sellers
+                .Where(seller => seller.UserId == userId)
+                .Select(seller => (int?)seller.UserId)
+                .FirstOrDefaultAsync();
 
             var order = await _context. Orders
                 . Include(o => o. Seller)
@@ -107,7 +111,8 @@ namespace PokemonCard. Controllers
                         . ThenInclude(p => p. ProductImages)
                 . FirstOrDefaultAsync(o =>
                     o. OrderId == id &&
-                    o. BuyerId == userId);
+                    (o. BuyerId == userId ||
+                     (sellerId.HasValue && o.SellerId == sellerId.Value)));
 
             if(order == null)
             {

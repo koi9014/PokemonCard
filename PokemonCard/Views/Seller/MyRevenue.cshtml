@@ -115,25 +115,30 @@
                         {
                             @foreach (var item in Model)
                             {
-                                bool isPending = item.RemitResult == "待撥款";
+                                var remitResult = string.IsNullOrWhiteSpace(item.RemitResult) ? "待撥款" : item.RemitResult;
+                                var remitStyle = remitResult switch
+                                {
+                                    "待撥款" => "bg-amber-50 text-amber-700 border border-amber-200",
+                                    "撥款取消" => "bg-red-50 text-red-700 border border-red-200",
+                                    "撥款完成" => "bg-green-50 text-green-700 border border-green-200",
+                                    _ => "bg-slate-50 text-slate-700 border border-slate-200"
+                                };
+                                var remitDotStyle = remitResult switch
+                                {
+                                    "待撥款" => "bg-amber-500",
+                                    "撥款取消" => "bg-red-500",
+                                    "撥款完成" => "bg-green-500",
+                                    _ => "bg-slate-500"
+                                };
 
                                 <tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
                                     <td class="py-4 px-4 font-medium hover:text-tertiary cursor-pointer">
                                         @item.OrderNo
                                     </td>
                                     <td class="py-4 px-4">
-                                        @if (isPending)
-                                        {
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 font-bold text-xs">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>@(string.IsNullOrEmpty(item.RemitResult) ? "待撥款" : item.RemitResult)
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/10 text-secondary font-bold text-xs">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>@item.RemitResult
-                                            </span>
-                                        }
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-bold text-xs @remitStyle">
+                                            <span class="w-1.5 h-1.5 rounded-full @remitDotStyle"></span>@remitResult
+                                        </span>
                                     </td>
                                     <td class="py-4 px-4 text-right font-bold">$@item.OrderAmount.ToString("N0")</td>
                                     <td class="py-4 px-4 text-center">5%</td>
