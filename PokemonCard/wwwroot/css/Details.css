@@ -238,9 +238,13 @@
     }
 
 
-    .product-option .option-price {
-        display: block;
-        color: #dc3545;
-        font-size: 14px;
-        font-weight: 600;
-    }
+.product-option .option-price {
+    display: block;
+    color: #dc3545;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.product-short-description {
+    white-space: pre-line;
+}

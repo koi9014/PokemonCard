@@ -30,6 +30,27 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
 
     private static bool IsOrderActionable(string status) => status is not ("SHIPPED" or "COMPLETED" or "CANCELLED");
 
+    private static string GetRemitStatusText(string? remitResult, string? remitStatus)
+    {
+        if (!string.IsNullOrWhiteSpace(remitResult))
+        {
+            return remitResult switch
+            {
+                "撥款成功" or "匯款完成" or "SUCCESS" => "撥款完成",
+                "撥款失敗" or "撥款取消" or "CANCELLED" => "撥款取消",
+                _ => remitResult
+            };
+        }
+
+        return remitStatus switch
+        {
+            "PENDING" => "待撥款",
+            "COMPLETED" or "SUCCESS" => "撥款完成",
+            "CANCELLED" or "FAILED" => "撥款取消",
+            _ => "待撥款"
+        };
+    }
+
     [HttpGet]
     public async Task<IActionResult> SellerHomepage(DateTime? startDate, DateTime? endDate)
     {
@@ -724,7 +745,15 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         }
 
         if (!string.IsNullOrWhiteSpace(status) && status != "全部")
-            reconciliations = reconciliations.Where(item => item.RemitResult == status);
+        {
+            reconciliations = status switch
+            {
+                "待撥款" => reconciliations.Where(item => item.RemitStatus == "PENDING" || item.RemitResult == "待撥款"),
+                "撥款完成" => reconciliations.Where(item => item.RemitStatus == "COMPLETED" || item.RemitStatus == "SUCCESS" || item.RemitResult == "撥款完成" || item.RemitResult == "撥款成功" || item.RemitResult == "匯款完成"),
+                "撥款取消" => reconciliations.Where(item => item.RemitStatus == "CANCELLED" || item.RemitStatus == "FAILED" || item.RemitResult == "撥款取消" || item.RemitResult == "撥款失敗"),
+                _ => reconciliations
+            };
+        }
 
         ViewBag.StartDate = startDate?.ToString("yyyy-MM-dd");
         ViewBag.EndDate = endDate?.ToString("yyyy-MM-dd");
@@ -735,6 +764,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             {
                 OrderNo = item.Order != null ? item.Order.OrderNo : "-",
                 RemitResult = item.RemitResult,
+                RemitStatus = item.RemitStatus,
                 OrderAmount = item.OrderAmount,
                 PlatformRevenue = item.PlatformRevenue,
                 AdjustAmount = item.AdjustAmount,
@@ -742,6 +772,9 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 RemitDate = item.RemitDate
             })
             .ToListAsync();
+
+        foreach (var item in model)
+            item.RemitResult = GetRemitStatusText(item.RemitResult, item.RemitStatus);
 
         return View(model);
     }

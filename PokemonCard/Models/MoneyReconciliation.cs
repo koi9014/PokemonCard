@@ -82,6 +82,7 @@ public class RevenueViewModel
 {
     public string OrderNo { get; set; } = string.Empty;   // 訂單編號
     public string? RemitResult { get; set; }               // 狀態/撥款結果
+    public string? RemitStatus { get; set; }
     public decimal OrderAmount { get; set; }              // 訂單金額
     public decimal PlatformRevenue { get; set; }          // 平台服務費
     public decimal AdjustAmount { get; set; }            // 調整金額
