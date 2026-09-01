@@ -197,93 +197,190 @@ public IActionResult Register(string realName, string email, string password, st
 
                                     return RedirectToAction("EditProfile");
                                 }
-                #endregion
+        #endregion
 
-                #region 賣家申請（需登入）
-                [Authorize]
-                [HttpGet]
-                public IActionResult SellerApplication()
+        #region 賣家申請（需登入）
+        [Authorize]
+        [HttpGet]
+        public IActionResult SellerApplication()
+        {
+            // ===== [賣家申請補件新增開始] 依目前申請狀態導向審核頁或帶回補件資料 =====
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                return Challenge();
+            }
+
+            var application = _context.SellerApplications
+                .FirstOrDefault(s => s.UserId == userId);
+
+            if (application?.SellerStatus == "PENDING"
+                || application?.SellerStatus == "APPROVED")
+            {
+                return RedirectToAction(nameof(SellerApplicationPending));
+            }
+
+            if (application != null)
+            {
+                ViewBag.ApplicationStatus = application.SellerStatus;
+                ViewBag.RealName = application.RealName;
+                ViewBag.IdNumber = application.IdNumber;
+                ViewBag.ContactPhone = application.ContactPhone;
+                ViewBag.BankCode = application.BankCode;
+                ViewBag.BankAccount = application.BankAccount;
+
+                if (application.SellerStatus == "REJECTED")
                 {
-                    return View();
+                    ViewBag.RejectReason = _context.SellerApplicationAudits
+                        .Where(a => a.ApplicationId == application.ApplicationId
+                                 && a.AuditStatus == "REJECTED")
+                        .OrderByDescending(a => a.ReviewedAt)
+                        .Select(a => a.AuditNote)
+                        .FirstOrDefault();
                 }
+            }
+            // ===== [賣家申請補件新增結束] =====
 
-                                [Authorize]
-                [HttpPost]
-                [ValidateAntiForgeryToken]
-                public async Task<IActionResult> SellerApplication(string realName, string idNumber, string contactPhone, string bankCode, string bankAccount, IFormFile idFront, IFormFile idBack)
+            return View();
+        }
+
+        // ===== [賣家審核狀態頁新增開始] 待審核與已通過共用同一個狀態頁 =====
+        [Authorize]
+        [HttpGet]
+        public IActionResult SellerApplicationPending()
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                return Challenge();
+            }
+
+            var application = _context.SellerApplications
+                .FirstOrDefault(s => s.UserId == userId);
+
+            if (application == null
+                || (application.SellerStatus != "PENDING"
+                    && application.SellerStatus != "APPROVED"))
+            {
+                return RedirectToAction(nameof(SellerApplication));
+            }
+
+            ViewBag.ApplicationStatus = application.SellerStatus;
+            return View();
+        }
+        // ===== [賣家審核狀態頁新增結束] =====
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SellerApplication(string realName, string idNumber, string contactPhone, string bankCode, string bankAccount, IFormFile idFront, IFormFile idBack)
+        {
+            // ===== [賣家申請補件新增開始] 讀取原申請、保留退回原因並阻止重複申請 =====
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                return Challenge();
+            }
+
+            var application = _context.SellerApplications
+                .FirstOrDefault(s => s.UserId == userId);
+
+            ViewBag.RealName = realName;
+            ViewBag.IdNumber = idNumber;
+            ViewBag.ContactPhone = contactPhone;
+            ViewBag.BankCode = bankCode;
+            ViewBag.BankAccount = bankAccount;
+            ViewBag.ApplicationStatus = application?.SellerStatus;
+
+            if (application?.SellerStatus == "REJECTED")
+            {
+                ViewBag.RejectReason = _context.SellerApplicationAudits
+                    .Where(a => a.ApplicationId == application.ApplicationId
+                             && a.AuditStatus == "REJECTED")
+                    .OrderByDescending(a => a.ReviewedAt)
+                    .Select(a => a.AuditNote)
+                    .FirstOrDefault();
+            }
+
+            if (application?.SellerStatus == "PENDING"
+                || application?.SellerStatus == "APPROVED")
+            {
+                return RedirectToAction(nameof(SellerApplicationPending));
+            }
+
+            if (application != null && application.SellerStatus != "REJECTED")
+            {
+                ViewBag.ApplicationStatus = application.SellerStatus;
+                ViewBag.ErrorMessage = "目前的申請狀態無法重新提交！";
+                return View();
+            }
+            // ===== [賣家申請補件新增結束] =====
+
+            // 基本必填檢查
+            if (string.IsNullOrWhiteSpace(realName) || string.IsNullOrWhiteSpace(idNumber) ||
+                string.IsNullOrWhiteSpace(contactPhone) || string.IsNullOrWhiteSpace(bankCode) ||
+                string.IsNullOrWhiteSpace(bankAccount))
+            {
+                ViewBag.ErrorMessage = "請填寫完整的申請資料！";
+                return View();
+            }
+
+            // 身分證正反面皆必須上傳
+            if (idFront == null || idFront.Length == 0 || idBack == null || idBack.Length == 0)
+            {
+                ViewBag.ErrorMessage = "請上傳身分證正反面照片！";
+                return View();
+            }
+
+            // ===== [賣家申請補件新增開始] 無紀錄才新增，被退回則更新原有紀錄 =====
+            if (application == null)
+            {
+                application = new SellerApplication
                 {
-                    var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                    UserId = userId
+                };
+                _context.SellerApplications.Add(application);
+            }
 
-                    // 基本必填檢查
-                    if (string.IsNullOrWhiteSpace(realName) || string.IsNullOrWhiteSpace(idNumber) ||
-                        string.IsNullOrWhiteSpace(contactPhone) || string.IsNullOrWhiteSpace(bankCode) ||
-                        string.IsNullOrWhiteSpace(bankAccount))
-                    {
-                        ViewBag.ErrorMessage = "請填寫完整的申請資料！";
-                        return View();
-                    }
+            application.RealName = realName;
+            application.IdNumber = idNumber;
+            application.ContactPhone = contactPhone;
+            application.BankCode = bankCode;
+            application.BankAccount = bankAccount;
+            application.SellerStatus = "PENDING";
+            application.ApplyAt = DateTime.Now;
+            // ===== [賣家申請補件新增結束] =====
 
-                    // 身分證正反面皆必須上傳
-                    if (idFront == null || idFront.Length == 0 || idBack == null || idBack.Length == 0)
-                    {
-                        ViewBag.ErrorMessage = "請上傳身分證正反面照片！";
-                        return View();
-                    }
+            // 身分證照片：存到 wwwroot/images/idcard 並把路徑寫入資料庫
+            var uploadDir = Path.Combine(_env.WebRootPath, "images", "idcard");
+            Directory.CreateDirectory(uploadDir);
 
-                    // 已存在「待審核」申請時不可重複送出（資料表有 PENDING 唯一索引）
-                    var alreadyApplied = _context.SellerApplications
-                        .Any(s => s.UserId == userId && s.SellerStatus == "PENDING");
-                    if (alreadyApplied)
-                    {
-                        ViewBag.ErrorMessage = "您已送出賣家申請，等待審核中！";
-                        return View();
-                    }
+            var frontExt = Path.GetExtension(idFront.FileName);
+            var frontName = $"id_{userId}_front_{DateTime.Now.Ticks}{frontExt}";
+            using (var stream = new FileStream(Path.Combine(uploadDir, frontName), FileMode.Create))
+            {
+                await idFront.CopyToAsync(stream);
+            }
+            application.IdcardFront = $"/images/idcard/{frontName}";
 
-                    var application = new SellerApplication
-                    {
-                        UserId = userId,
-                        RealName = realName,
-                        IdNumber = idNumber,
-                        ContactPhone = contactPhone,
-                        BankCode = bankCode,
-                        BankAccount = bankAccount,
-                        SellerStatus = "PENDING",
-                        ApplyAt = DateTime.Now
-                    };
+            var backExt = Path.GetExtension(idBack.FileName);
+            var backName = $"id_{userId}_back_{DateTime.Now.Ticks}{backExt}";
+            using (var stream = new FileStream(Path.Combine(uploadDir, backName), FileMode.Create))
+            {
+                await idBack.CopyToAsync(stream);
+            }
+            application.IdcardBack = $"/images/idcard/{backName}";
 
-                    // 身分證照片：存到 wwwroot/images/idcard 並把路徑寫入資料庫
-                    var uploadDir = Path.Combine(_env.WebRootPath, "images", "idcard");
-                    Directory.CreateDirectory(uploadDir);
-
-                    var frontExt = Path.GetExtension(idFront.FileName);
-                    var frontName = $"id_{userId}_front_{DateTime.Now.Ticks}{frontExt}";
-                    using (var stream = new FileStream(Path.Combine(uploadDir, frontName), FileMode.Create))
-                    {
-                        await idFront.CopyToAsync(stream);
-                    }
-                    application.IdcardFront = $"/images/idcard/{frontName}";
-
-                    var backExt = Path.GetExtension(idBack.FileName);
-                    var backName = $"id_{userId}_back_{DateTime.Now.Ticks}{backExt}";
-                    using (var stream = new FileStream(Path.Combine(uploadDir, backName), FileMode.Create))
-                    {
-                        await idBack.CopyToAsync(stream);
-                    }
-                    application.IdcardBack = $"/images/idcard/{backName}";
-
-                    try
-                    {
-                        _context.SellerApplications.Add(application);
-                        _context.SaveChanges();
-                        TempData["SellerApplied"] = true;
-                        return RedirectToAction("Index", "Home");
-                    }
-                    catch (Exception ex)
-                    {
-                        ViewBag.ErrorMessage = "申請送出失敗，請稍後再試！";
-                        return View();
-                    }
-                }
-                #endregion
+            try
+            {
+                _context.SaveChanges();
+                TempData["SellerApplied"] = true;
+                // ===== [賣家審核狀態頁新增] 送出成功後進入平台審核狀態頁 =====
+                return RedirectToAction(nameof(SellerApplicationPending));
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = "申請送出失敗，請稍後再試！";
+                return View();
+            }
+        }
+        #endregion
     }
 }

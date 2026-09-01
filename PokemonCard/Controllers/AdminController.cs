@@ -10,6 +10,12 @@ namespace PokemonCard.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie")]
     public class AdminController : Controller
     {
+        private const string ActiveUserStatus = "ACTIVE";
+        private const string BannedUserStatus = "BANNED";
+        private const string BlockedStatus = "BLOCKED";
+        private const string UnblockedStatus = "UNBLOCKED";
+        private const int UserPageSize = 10;
+
         private readonly PicartchuContext _context;
         private readonly BannedWordReviewService _bannedWordReviewService;
 
@@ -22,12 +28,356 @@ namespace PokemonCard.Controllers
 
 
 
-        public IActionResult AdminCenter()
+        public async Task<IActionResult> AdminCenter(
+            string? userKeyword,
+            string userStatus = "all",
+            int page = 1,
+            string analysisType = "revenue",
+            string revenueRange = "month",
+            DateTime? revenueStart = null,
+            DateTime? revenueEnd = null)
         {
-            var query = _context.Products
-                .Include(product => product.ProductName)
+            var today = DateTime.Today;
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var nextMonthStart = monthStart.AddMonths(1);
+            var normalizedKeyword = userKeyword?.Trim() ?? string.Empty;
+            var normalizedStatus = userStatus is "active" or "blocked" ? userStatus : "all";
+            var normalizedAnalysisType = analysisType == "members" ? "members" : "revenue";
+            var normalizedRevenueRange = revenueRange is "7days" or "30days" or "year" or "custom"
+                ? revenueRange
+                : "month";
+
+            DateTime revenuePeriodStart;
+            DateTime revenuePeriodEnd;
+
+            switch (normalizedRevenueRange)
+            {
+                case "7days":
+                    revenuePeriodStart = today.AddDays(-6);
+                    revenuePeriodEnd = today.AddDays(1);
+                    break;
+                case "30days":
+                    revenuePeriodStart = today.AddDays(-29);
+                    revenuePeriodEnd = today.AddDays(1);
+                    break;
+                case "year":
+                    revenuePeriodStart = new DateTime(today.Year, 1, 1);
+                    revenuePeriodEnd = revenuePeriodStart.AddYears(1);
+                    break;
+                case "custom" when revenueStart.HasValue
+                    && revenueEnd.HasValue
+                    && revenueEnd.Value.Date >= revenueStart.Value.Date:
+                    revenuePeriodStart = revenueStart.Value.Date;
+                    revenuePeriodEnd = revenueEnd.Value.Date.AddDays(1);
+                    break;
+                default:
+                    normalizedRevenueRange = "month";
+                    revenuePeriodStart = monthStart;
+                    revenuePeriodEnd = nextMonthStart;
+                    break;
+            }
+
+            var previousPeriodEnd = revenuePeriodStart;
+            var previousPeriodStart = normalizedRevenueRange switch
+            {
+                "month" => revenuePeriodStart.AddMonths(-1),
+                "year" => revenuePeriodStart.AddYears(-1),
+                _ => revenuePeriodStart - (revenuePeriodEnd - revenuePeriodStart)
+            };
+
+            var revenueRecords = await _context.MoneyReconciliations
+                .AsNoTracking()
+                .Where(reconciliation => reconciliation.CreatedAt >= revenuePeriodStart
+                    && reconciliation.CreatedAt < revenuePeriodEnd)
+                .Select(reconciliation => new
+                {
+                    reconciliation.CreatedAt,
+                    reconciliation.PlatformRevenue
+                })
+                .ToListAsync();
+
+            var previousPeriodRevenue = await _context.MoneyReconciliations
+                .AsNoTracking()
+                .Where(reconciliation => reconciliation.CreatedAt >= previousPeriodStart
+                    && reconciliation.CreatedAt < previousPeriodEnd)
+                .SumAsync(reconciliation => (long?)reconciliation.PlatformRevenue) ?? 0;
+
+            var revenueChartLabels = new List<string>();
+            var revenueChartValues = new List<long>();
+            var useMonthlyRevenueChart = (revenuePeriodEnd - revenuePeriodStart).TotalDays > 62;
+
+            if (useMonthlyRevenueChart)
+            {
+                for (var cursor = new DateTime(revenuePeriodStart.Year, revenuePeriodStart.Month, 1);
+                    cursor < revenuePeriodEnd;
+                    cursor = cursor.AddMonths(1))
+                {
+                    revenueChartLabels.Add(cursor.ToString("yyyy/MM"));
+                    revenueChartValues.Add(revenueRecords
+                        .Where(record => record.CreatedAt.Year == cursor.Year
+                            && record.CreatedAt.Month == cursor.Month)
+                        .Sum(record => (long)record.PlatformRevenue));
+                }
+            }
+            else
+            {
+                for (var cursor = revenuePeriodStart.Date;
+                    cursor < revenuePeriodEnd;
+                    cursor = cursor.AddDays(1))
+                {
+                    revenueChartLabels.Add(cursor.ToString("MM/dd"));
+                    revenueChartValues.Add(revenueRecords
+                        .Where(record => record.CreatedAt.Date == cursor)
+                        .Sum(record => (long)record.PlatformRevenue));
+                }
+            }
+
+            var revenuePeriodTotal = revenueRecords.Sum(record => (long)record.PlatformRevenue);
+            decimal? revenueGrowthRate = previousPeriodRevenue == 0
+                ? null
+                : Math.Round(
+                    (revenuePeriodTotal - previousPeriodRevenue) * 100m / previousPeriodRevenue,
+                    1);
+
+            var memberCreatedDates = await _context.Users
+                .AsNoTracking()
+                .Where(user => user.UserCreatedAt >= revenuePeriodStart
+                    && user.UserCreatedAt < revenuePeriodEnd)
+                .Select(user => user.UserCreatedAt)
+                .ToListAsync();
+
+            var previousPeriodMemberCount = await _context.Users
+                .AsNoTracking()
+                .CountAsync(user => user.UserCreatedAt >= previousPeriodStart
+                    && user.UserCreatedAt < previousPeriodEnd);
+
+            var memberChartLabels = new List<string>();
+            var memberChartValues = new List<int>();
+
+            if (useMonthlyRevenueChart)
+            {
+                for (var cursor = new DateTime(revenuePeriodStart.Year, revenuePeriodStart.Month, 1);
+                    cursor < revenuePeriodEnd;
+                    cursor = cursor.AddMonths(1))
+                {
+                    memberChartLabels.Add(cursor.ToString("yyyy/MM"));
+                    memberChartValues.Add(memberCreatedDates.Count(createdAt =>
+                        createdAt.Year == cursor.Year && createdAt.Month == cursor.Month));
+                }
+            }
+            else
+            {
+                for (var cursor = revenuePeriodStart.Date;
+                    cursor < revenuePeriodEnd;
+                    cursor = cursor.AddDays(1))
+                {
+                    memberChartLabels.Add(cursor.ToString("MM/dd"));
+                    memberChartValues.Add(memberCreatedDates.Count(createdAt => createdAt.Date == cursor));
+                }
+            }
+
+            var memberPeriodNewCount = memberCreatedDates.Count;
+            decimal? memberGrowthRate = previousPeriodMemberCount == 0
+                ? null
+                : Math.Round(
+                    (memberPeriodNewCount - previousPeriodMemberCount) * 100m / previousPeriodMemberCount,
+                    1);
+
+            var userQuery = _context.Users
+                .AsNoTracking()
                 .AsQueryable();
-            return View(query);
+
+            if (!string.IsNullOrWhiteSpace(normalizedKeyword))
+            {
+                var isUserId = int.TryParse(normalizedKeyword, out var userId);
+                userQuery = userQuery.Where(user =>
+                    (isUserId && user.UserId == userId) ||
+                    user.Email.Contains(normalizedKeyword) ||
+                    (user.Username != null && user.Username.Contains(normalizedKeyword)) ||
+                    (user.DisplayName != null && user.DisplayName.Contains(normalizedKeyword)));
+            }
+
+            userQuery = normalizedStatus switch
+            {
+                "active" => userQuery.Where(user =>
+                    !user.UserBlacklists.Any(block => block.UnblockedAt == null)),
+                "blocked" => userQuery.Where(user =>
+                    user.UserBlacklists.Any(block => block.UnblockedAt == null)),
+                _ => userQuery
+            };
+
+            var filteredUserCount = await userQuery.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(filteredUserCount / (double)UserPageSize));
+            var currentPage = Math.Clamp(page, 1, totalPages);
+
+            var users = await userQuery
+                .OrderByDescending(user => user.UserCreatedAt)
+                .ThenByDescending(user => user.UserId)
+                .Skip((currentPage - 1) * UserPageSize)
+                .Take(UserPageSize)
+                .Select(user => new AdminUserListItemViewModel
+                {
+                    UserId = user.UserId,
+                    DisplayName = user.DisplayName,
+                    Username = user.Username,
+                    Email = user.Email,
+                    UserStatus = user.UserStatus,
+                    SellerVerificationStatus = user.SellerVerificationStatus,
+                    UserCreatedAt = user.UserCreatedAt,
+                    IsBlacklisted = user.UserBlacklists.Any(block => block.UnblockedAt == null),
+                    BlockReason = user.UserBlacklists
+                        .Where(block => block.UnblockedAt == null)
+                        .OrderByDescending(block => block.BlockedAt)
+                        .Select(block => block.ReasonDetail)
+                        .FirstOrDefault(),
+                    BlockedAt = user.UserBlacklists
+                        .Where(block => block.UnblockedAt == null)
+                        .OrderByDescending(block => block.BlockedAt)
+                        .Select(block => (DateTime?)block.BlockedAt)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+
+            var viewModel = new AdminDashboardViewModel
+            {
+                TotalUserCount = await _context.Users
+                    .AsNoTracking()
+                    .CountAsync(),
+                BlacklistedUserCount = await _context.UserBlacklists
+                    .AsNoTracking()
+                    .Where(block => block.UnblockedAt == null)
+                    .Select(block => block.UserId)
+                    .Distinct()
+                    .CountAsync(),
+                MonthlyPlatformRevenue = await _context.MoneyReconciliations
+                    .AsNoTracking()
+                    .Where(reconciliation => reconciliation.CreatedAt >= monthStart
+                        && reconciliation.CreatedAt < nextMonthStart)
+                    .SumAsync(reconciliation => (long?)reconciliation.PlatformRevenue) ?? 0,
+                RevenueMonth = monthStart,
+                AnalysisType = normalizedAnalysisType,
+                RevenueRange = normalizedRevenueRange,
+                RevenuePeriodStart = revenuePeriodStart,
+                RevenuePeriodEnd = revenuePeriodEnd.AddDays(-1),
+                RevenuePeriodTotal = revenuePeriodTotal,
+                RevenueRecordCount = revenueRecords.Count,
+                RevenueGrowthRate = revenueGrowthRate,
+                RevenueChartLabels = revenueChartLabels,
+                RevenueChartValues = revenueChartValues,
+                MemberPeriodNewCount = memberPeriodNewCount,
+                MemberGrowthRate = memberGrowthRate,
+                MemberChartLabels = memberChartLabels,
+                MemberChartValues = memberChartValues,
+                Users = users,
+                UserKeyword = normalizedKeyword,
+                UserStatusFilter = normalizedStatus,
+                CurrentPage = currentPage,
+                TotalPages = totalPages,
+                FilteredUserCount = filteredUserCount
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BanUser(
+            int userId,
+            string? reason,
+            string? userKeyword,
+            string userStatus = "all",
+            int page = 1)
+        {
+            var normalizedReason = reason?.Trim();
+
+            if (string.IsNullOrWhiteSpace(normalizedReason))
+            {
+                TempData["UserManagementError"] = "封鎖使用者時必須填寫原因。";
+                return RedirectToAdminCenter(userKeyword, userStatus, page);
+            }
+
+            if (normalizedReason.Length > 500)
+            {
+                TempData["UserManagementError"] = "封鎖原因不可超過 500 個字。";
+                return RedirectToAdminCenter(userKeyword, userStatus, page);
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                TempData["UserManagementError"] = "找不到指定的使用者。";
+                return RedirectToAdminCenter(userKeyword, userStatus, page);
+            }
+
+            var isAlreadyBlocked = await _context.UserBlacklists
+                .AnyAsync(block => block.UserId == userId && block.UnblockedAt == null);
+
+            if (isAlreadyBlocked)
+            {
+                TempData["UserManagementError"] = "此使用者目前已在黑名單中。";
+                return RedirectToAdminCenter(userKeyword, userStatus, page);
+            }
+
+            var now = DateTime.Now;
+            user.UserStatus = BannedUserStatus;
+            user.UserUpdatedAt = now;
+
+            _context.UserBlacklists.Add(new UserBlacklist
+            {
+                UserId = userId,
+                ReasonDetail = normalizedReason,
+                BlockStatus = BlockedStatus,
+                AdminId = GetCurrentAdminId(),
+                BlockedAt = now
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["UserManagementMessage"] = $"使用者 #{userId} 已加入黑名單。";
+
+            return RedirectToAdminCenter(userKeyword, userStatus, page);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnbanUser(
+            int userId,
+            string? userKeyword,
+            string userStatus = "all",
+            int page = 1)
+        {
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                TempData["UserManagementError"] = "找不到指定的使用者。";
+                return RedirectToAdminCenter(userKeyword, userStatus, page);
+            }
+
+            var activeBlocks = await _context.UserBlacklists
+                .Where(block => block.UserId == userId && block.UnblockedAt == null)
+                .ToListAsync();
+
+            if (activeBlocks.Count == 0)
+            {
+                TempData["UserManagementError"] = "此使用者目前不在黑名單中。";
+                return RedirectToAdminCenter(userKeyword, userStatus, page);
+            }
+
+            var now = DateTime.Now;
+            foreach (var block in activeBlocks)
+            {
+                block.BlockStatus = UnblockedStatus;
+                block.UnblockedAt = now;
+            }
+
+            user.UserStatus = ActiveUserStatus;
+            user.UserUpdatedAt = now;
+
+            await _context.SaveChangesAsync();
+            TempData["UserManagementMessage"] = $"使用者 #{userId} 已解除封鎖。";
+
+            return RedirectToAdminCenter(userKeyword, userStatus, page);
         }
 
         public async Task<IActionResult> SellerAudit(
@@ -38,6 +388,7 @@ namespace PokemonCard.Controllers
             DateTime? chartEnd = null)
         {
             var query = _context.SellerApplications
+                .AsNoTracking()
                 .Include(application => application.User)
                 .AsQueryable();
 
@@ -374,6 +725,21 @@ namespace PokemonCard.Controllers
         }
         // ===== [違禁字庫管理新增結束] =====
 
+        private IActionResult RedirectToAdminCenter(
+            string? userKeyword,
+            string? userStatus,
+            int page)
+        {
+            var url = Url.Action(nameof(AdminCenter), new
+            {
+                userKeyword,
+                userStatus,
+                page
+            }) ?? Url.Action(nameof(AdminCenter)) ?? "/Admin/AdminCenter";
+
+            return Redirect($"{url}#user-management");
+        }
+
         private int GetCurrentAdminId()
         {
             var adminIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -386,5 +752,88 @@ namespace PokemonCard.Controllers
             throw new InvalidOperationException("無法取得目前登入的管理員編號");
         }
 
+    }
+}
+
+namespace PokemonCard.Models
+{
+    /// <summary>
+    /// 管理員後台首頁的即時統計摘要。
+    /// </summary>
+    public sealed class AdminDashboardViewModel
+    {
+        public int TotalUserCount { get; init; }
+
+        public int BlacklistedUserCount { get; init; }
+
+        public long MonthlyPlatformRevenue { get; init; }
+
+        public DateTime RevenueMonth { get; init; }
+
+        public string AnalysisType { get; init; } = "revenue";
+
+        public string RevenueRange { get; init; } = "month";
+
+        public DateTime RevenuePeriodStart { get; init; }
+
+        public DateTime RevenuePeriodEnd { get; init; }
+
+        public long RevenuePeriodTotal { get; init; }
+
+        public int RevenueRecordCount { get; init; }
+
+        public decimal? RevenueGrowthRate { get; init; }
+
+        public IReadOnlyList<string> RevenueChartLabels { get; init; }
+            = Array.Empty<string>();
+
+        public IReadOnlyList<long> RevenueChartValues { get; init; }
+            = Array.Empty<long>();
+
+        public int MemberPeriodNewCount { get; init; }
+
+        public decimal? MemberGrowthRate { get; init; }
+
+        public IReadOnlyList<string> MemberChartLabels { get; init; }
+            = Array.Empty<string>();
+
+        public IReadOnlyList<int> MemberChartValues { get; init; }
+            = Array.Empty<int>();
+
+        public IReadOnlyList<AdminUserListItemViewModel> Users { get; init; }
+            = Array.Empty<AdminUserListItemViewModel>();
+
+        public string UserKeyword { get; init; } = string.Empty;
+
+        public string UserStatusFilter { get; init; } = "all";
+
+        public int CurrentPage { get; init; }
+
+        public int TotalPages { get; init; }
+
+        public int FilteredUserCount { get; init; }
+    }
+
+    public sealed class AdminUserListItemViewModel
+    {
+        public int UserId { get; init; }
+
+        public string? DisplayName { get; init; }
+
+        public string? Username { get; init; }
+
+        public string Email { get; init; } = string.Empty;
+
+        public string UserStatus { get; init; } = string.Empty;
+
+        public string SellerVerificationStatus { get; init; } = string.Empty;
+
+        public DateTime UserCreatedAt { get; init; }
+
+        public bool IsBlacklisted { get; init; }
+
+        public string? BlockReason { get; init; }
+
+        public DateTime? BlockedAt { get; init; }
     }
 }

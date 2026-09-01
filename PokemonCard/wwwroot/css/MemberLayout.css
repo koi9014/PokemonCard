@@ -180,13 +180,15 @@ body {
    ========================= */
 
 .member-main {
-    width: 100%;
+    width: min(calc(100vw - 2rem), 1700px);
+    margin-left: 50%;
+    padding-block: 1.5rem;
+    transform: translateX(-50%);
 }
 
     .member-main a {
         text-decoration: none;
     }
-
 
 /* =========================
    賣家頁

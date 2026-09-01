@@ -3,53 +3,509 @@
     Layout = "_AdminLayout";
 }
 
-<div class="d-flex align-items-center justify-content-between mb-4">
-    <div>
-        <h1 class="h3 mb-1">管理員後台首頁 / 儀表板</h1>
-        <p class="text-secondary mb-0">日本限定寶可夢代購平台管理總覽</p>
-    </div>
-</div>
+@model AdminDashboardViewModel
+@using System.Text.Json
+
+@{
+    var isMemberAnalysis = Model.AnalysisType == "members";
+    var revenueComparisonLabel = Model.RevenueRange switch
+    {
+        "7days" => "較前 7 天",
+        "30days" => "較前 30 天",
+        "year" => "較去年",
+        "custom" => "較前一相同天數",
+        _ => "較上個月"
+    };
+    var analysisGrowthRate = isMemberAnalysis ? Model.MemberGrowthRate : Model.RevenueGrowthRate;
+    var analysisChartLabels = isMemberAnalysis ? Model.MemberChartLabels : Model.RevenueChartLabels;
+    var analysisChartValues = isMemberAnalysis
+        ? Model.MemberChartValues.Select(value => (long)value).ToArray()
+        : Model.RevenueChartValues.ToArray();
+    var analysisHasData = isMemberAnalysis
+        ? Model.MemberPeriodNewCount > 0
+        : Model.RevenueRecordCount > 0;
+}
+
+<div class="container-fluid px-0">
+    <header class="bg-dark text-white rounded-4 shadow-sm p-4 d-flex align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="small fw-bold text-info text-uppercase mb-2">ADMIN DASHBOARD</div>
+            <h1 class="h3 fw-bold mb-2">管理員營運儀表板</h1>
+            <p class="text-white-50 mb-0">會員管理、平台收入與風險控管總覽</p>
+        </div>
+        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-white bg-opacity-10 border border-light border-opacity-25 p-3 fs-4" aria-hidden="true">
+            <i class="bi bi-speedometer2"></i>
+        </span>
+    </header>
 
 
-<div class="row g-3">
-    <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-secondary small mb-1">待審核賣家</div>
-                <div class="fs-3 fw-bold">0</div>
-            </div>
+    <div class="row g-3">
+        <div class="col-md-6 col-xl-4">
+            <a asp-controller="Admin" asp-action="AdminCenter" asp-route-analysisType="members" asp-route-revenueRange="month" asp-fragment="platform-analysis" class="d-block h-100 text-decoration-none text-reset">
+                <div class="card border-0 border-start border-4 border-primary rounded-4 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="text-secondary small">會員總數</div>
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-3 fs-5">
+                                <i class="bi bi-people-fill"></i>
+                            </span>
+                        </div>
+                        <div class="fs-3 fw-bold">@Model.TotalUserCount.ToString("N0")</div>
+                        <div class="small fw-semibold text-primary mt-2">查看會員成長 <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userStatus="blocked" asp-fragment="user-management" class="d-block h-100 text-decoration-none text-reset">
+                <div class="card border-0 border-start border-4 border-danger rounded-4 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="text-secondary small">黑名單使用者</div>
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-danger-subtle text-danger p-3 fs-5">
+                                <i class="bi bi-person-fill-slash"></i>
+                            </span>
+                        </div>
+                        <div class="fs-3 fw-bold">@Model.BlacklistedUserCount.ToString("N0")</div>
+                        <div class="small fw-semibold text-danger mt-2">管理封鎖名單 <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a asp-controller="Admin" asp-action="AdminCenter" asp-route-analysisType="revenue" asp-route-revenueRange="month" asp-fragment="platform-analysis" class="d-block h-100 text-decoration-none text-reset">
+                <div class="card border-0 border-start border-4 border-warning rounded-4 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="text-secondary small">本月平台收入</div>
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-warning-subtle text-warning-emphasis p-3 fs-5">
+                                <i class="bi bi-cash-coin"></i>
+                            </span>
+                        </div>
+                        <div class="fs-3 fw-bold">NT$ @Model.MonthlyPlatformRevenue.ToString("N0")</div>
+                        <div class="small fw-semibold text-warning-emphasis mt-2">查看收入分析 <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
-    <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-secondary small mb-1">異常訂單</div>
-                <div class="fs-3 fw-bold">0</div>
+
+    <section id="platform-analysis" class="card border-0 rounded-4 shadow-sm mt-4" aria-labelledby="platformAnalysisTitle">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3 mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-3 fs-5"><i class="bi bi-bar-chart-line"></i></span>
+                    <div>
+                        <h2 id="platformAnalysisTitle" class="h5 fw-bold mb-1">平台營運分析</h2>
+                        <p class="text-secondary mb-0">@(isMemberAnalysis ? "依會員註冊日期分析會員成長。" : "依對帳建立日期統計平台抽成收入。")</p>
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="圖表類型">
+                    <button type="button" class="btn btn-dark active" data-analysis-chart-type="line">折線圖</button>
+                    <button type="button" class="btn btn-outline-dark" data-analysis-chart-type="bar">長條圖</button>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-secondary small mb-1">黑名單使用者</div>
-                <div class="fs-3 fw-bold">0</div>
+
+            <div class="btn-group mb-3" role="group" aria-label="分析項目">
+                <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@Model.CurrentPage" asp-route-analysisType="members" asp-route-revenueRange="@Model.RevenueRange" asp-route-revenueStart="@Model.RevenuePeriodStart.ToString("yyyy-MM-dd")" asp-route-revenueEnd="@Model.RevenuePeriodEnd.ToString("yyyy-MM-dd")" asp-fragment="platform-analysis" class="btn @(isMemberAnalysis ? "btn-primary" : "btn-outline-primary")">
+                    <i class="bi bi-people me-1"></i>會員成長
+                </a>
+                <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@Model.CurrentPage" asp-route-analysisType="revenue" asp-route-revenueRange="@Model.RevenueRange" asp-route-revenueStart="@Model.RevenuePeriodStart.ToString("yyyy-MM-dd")" asp-route-revenueEnd="@Model.RevenuePeriodEnd.ToString("yyyy-MM-dd")" asp-fragment="platform-analysis" class="btn @(!isMemberAnalysis ? "btn-primary" : "btn-outline-primary")">
+                    <i class="bi bi-cash-coin me-1"></i>平台收入
+                </a>
             </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-secondary small mb-1">系統模組</div>
-                <div class="fs-3 fw-bold">9</div>
+
+            <div class="bg-light border rounded-3 p-3 mb-4">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@Model.CurrentPage" asp-route-analysisType="@Model.AnalysisType" asp-route-revenueRange="7days" asp-fragment="platform-analysis" class="btn btn-sm @(Model.RevenueRange == "7days" ? "btn-primary" : "btn-outline-primary")">近 7 天</a>
+                    <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@Model.CurrentPage" asp-route-analysisType="@Model.AnalysisType" asp-route-revenueRange="30days" asp-fragment="platform-analysis" class="btn btn-sm @(Model.RevenueRange == "30days" ? "btn-primary" : "btn-outline-primary")">近 30 天</a>
+                    <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@Model.CurrentPage" asp-route-analysisType="@Model.AnalysisType" asp-route-revenueRange="month" asp-fragment="platform-analysis" class="btn btn-sm @(Model.RevenueRange == "month" ? "btn-primary" : "btn-outline-primary")">本月</a>
+                    <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@Model.CurrentPage" asp-route-analysisType="@Model.AnalysisType" asp-route-revenueRange="year" asp-fragment="platform-analysis" class="btn btn-sm @(Model.RevenueRange == "year" ? "btn-primary" : "btn-outline-primary")">今年</a>
+                </div>
+
+                <form asp-controller="Admin" asp-action="AdminCenter" method="get" class="row g-2 align-items-end mb-0">
+                    <input type="hidden" name="userKeyword" value="@Model.UserKeyword" />
+                    <input type="hidden" name="userStatus" value="@Model.UserStatusFilter" />
+                    <input type="hidden" name="page" value="@Model.CurrentPage" />
+                    <input type="hidden" name="analysisType" value="@Model.AnalysisType" />
+                    <input type="hidden" name="revenueRange" value="custom" />
+                    <div class="col-sm-5 col-lg-3">
+                        <label for="revenueStart" class="form-label small fw-semibold">開始日期</label>
+                        <input id="revenueStart" name="revenueStart" type="date" value="@Model.RevenuePeriodStart.ToString("yyyy-MM-dd")" class="form-control" required />
+                    </div>
+                    <div class="col-sm-5 col-lg-3">
+                        <label for="revenueEnd" class="form-label small fw-semibold">結束日期</label>
+                        <input id="revenueEnd" name="revenueEnd" type="date" value="@Model.RevenuePeriodEnd.ToString("yyyy-MM-dd")" class="form-control" required />
+                    </div>
+                    <div class="col-sm-2 col-lg-2 d-grid">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-calendar-check me-1"></i>套用</button>
+                    </div>
+                </form>
             </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 @(isMemberAnalysis ? "col-xl-6" : "col-xl-4")">
+                    <div class="bg-light border rounded-3 p-3 h-100">
+                        @if (isMemberAnalysis)
+                        {
+                            <div class="text-secondary small mb-1">期間新增會員</div>
+                            <div class="h5 fw-bold mb-0">@Model.MemberPeriodNewCount.ToString("N0") 人</div>
+                        }
+                        else
+                        {
+                            <div class="text-secondary small mb-1">期間平台收入</div>
+                            <div class="h5 fw-bold mb-0">NT$ @Model.RevenuePeriodTotal.ToString("N0")</div>
+                        }
+                    </div>
+                </div>
+                @if (!isMemberAnalysis)
+                {
+                    <div class="col-sm-6 col-xl-4">
+                        <div class="bg-light border rounded-3 p-3 h-100">
+                            <div class="text-secondary small mb-1">對帳筆數</div>
+                            <div class="h5 fw-bold mb-0">@Model.RevenueRecordCount.ToString("N0") 筆</div>
+                        </div>
+                    </div>
+                }
+                <div class="col-sm-6 @(isMemberAnalysis ? "col-xl-6" : "col-xl-4")">
+                    <div class="bg-light border rounded-3 p-3 h-100">
+                        <div class="text-secondary small mb-1">@revenueComparisonLabel</div>
+                        @if (analysisGrowthRate.HasValue)
+                        {
+                            var growthClass = analysisGrowthRate.Value >= 0 ? "text-success" : "text-danger";
+                            var growthIcon = analysisGrowthRate.Value >= 0 ? "▲" : "▼";
+                            <div class="h5 fw-bold mb-0 @growthClass">@growthIcon @Math.Abs(analysisGrowthRate.Value).ToString("N1")%</div>
+                        }
+                        else
+                        {
+                            <div class="small text-secondary">前期尚無資料</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="fw-semibold">@Model.RevenuePeriodStart.ToString("yyyy/MM/dd")－@Model.RevenuePeriodEnd.ToString("yyyy/MM/dd")</div>
+            </div>
+
+            @if (!analysisHasData)
+            {
+                <div class="alert alert-light border text-secondary mb-0" role="status">
+                    @(isMemberAnalysis
+                        ? "此期間沒有新增會員資料。"
+                        : "此期間尚無平台收入資料。新增金流對帳資料後，圖表將自動呈現。")
+                </div>
+            }
+            else
+            {
+                <div class="position-relative" style="height: 360px;">
+                    <canvas id="analysisChart" aria-label="@(isMemberAnalysis ? "會員成長趨勢圖" : "平台收入趨勢圖")" role="img"></canvas>
+                </div>
+            }
         </div>
-    </div>
+    </section>
+
+    <section id="user-management" class="card border-0 rounded-4 shadow-sm mt-4" aria-labelledby="userManagementTitle">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-3 fs-5"><i class="bi bi-person-gear"></i></span>
+                    <div>
+                        <h2 id="userManagementTitle" class="h5 fw-bold mb-1">使用者與黑名單管理</h2>
+                        <p class="text-secondary mb-0">搜尋全部使用者，並保留每次封鎖與解除封鎖紀錄。</p>
+                    </div>
+                </div>
+                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">符合條件 @Model.FilteredUserCount.ToString("N0") 人</span>
+            </div>
+
+            @if (TempData["UserManagementMessage"] is string successMessage)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @successMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+                </div>
+            }
+
+            @if (TempData["UserManagementError"] is string errorMessage)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @errorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+                </div>
+            }
+
+            <form asp-controller="Admin" asp-action="AdminCenter" method="get" class="row g-2 align-items-end bg-light border rounded-3 p-3 mb-3">
+                <div class="col-lg-7">
+                    <label for="userKeyword" class="form-label small fw-semibold">搜尋使用者</label>
+                    <input id="userKeyword" name="userKeyword" value="@Model.UserKeyword" class="form-control" placeholder="輸入會員 ID、帳號、顯示名稱或 Email" />
+                </div>
+                <div class="col-sm-7 col-lg-3">
+                    <label for="userStatus" class="form-label small fw-semibold">帳號狀態</label>
+                    <select id="userStatus" name="userStatus" class="form-select">
+                        <option value="all" selected="@(Model.UserStatusFilter == "all")">全部使用者</option>
+                        <option value="active" selected="@(Model.UserStatusFilter == "active")">未封鎖</option>
+                        <option value="blocked" selected="@(Model.UserStatusFilter == "blocked")">已封鎖</option>
+                    </select>
+                </div>
+                <div class="col-sm-5 col-lg-2 d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>查詢
+                    </button>
+                </div>
+            </form>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="all" asp-fragment="user-management" class="btn btn-sm rounded-pill px-3 @(Model.UserStatusFilter == "all" ? "btn-dark" : "btn-outline-dark")">全部</a>
+                <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="active" asp-fragment="user-management" class="btn btn-sm rounded-pill px-3 @(Model.UserStatusFilter == "active" ? "btn-success" : "btn-outline-success")">未封鎖</a>
+                <a asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="blocked" asp-fragment="user-management" class="btn btn-sm rounded-pill px-3 @(Model.UserStatusFilter == "blocked" ? "btn-danger" : "btn-outline-danger")">已封鎖</a>
+            </div>
+
+            <div class="table-responsive border rounded-3 shadow-sm">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">會員</th>
+                            <th>電子郵件</th>
+                            <th>身分</th>
+                            <th>帳號狀態</th>
+                            <th>封鎖資訊</th>
+                            <th class="text-end pe-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Users.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-secondary py-5">目前沒有符合條件的使用者</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var user in Model.Users)
+                            {
+                                var userName = user.DisplayName ?? user.Username ?? $"會員 #{user.UserId}";
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-semibold">@userName</div>
+                                        <div class="text-secondary small">ID：@user.UserId</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 240px;" title="@user.Email">@user.Email</div>
+                                        <div class="text-secondary small">註冊 @user.UserCreatedAt.ToString("yyyy/MM/dd")</div>
+                                    </td>
+                                    <td>
+                                        @if (user.SellerVerificationStatus == "APPROVED")
+                                        {
+                                            <span class="badge text-bg-primary">買家／賣家</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-light border text-dark">買家</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (user.IsBlacklisted)
+                                        {
+                                            <span class="badge text-bg-danger">已封鎖</span>
+                                        }
+                                        else if (user.UserStatus == "ACTIVE")
+                                        {
+                                            <span class="badge text-bg-success">正常</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">@user.UserStatus</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (user.IsBlacklisted)
+                                        {
+                                            <div class="small fw-semibold text-danger">@(user.BlockReason ?? "未填寫原因")</div>
+                                            <div class="text-secondary small">@(user.BlockedAt?.ToString("yyyy/MM/dd HH:mm"))</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        @if (user.IsBlacklisted)
+                                        {
+                                            <form asp-controller="Admin" asp-action="UnbanUser" method="post" class="d-inline" onsubmit="return confirm('確定要解除此使用者的封鎖嗎？');">
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+                                                <input type="hidden" name="userKeyword" value="@Model.UserKeyword" />
+                                                <input type="hidden" name="userStatus" value="@Model.UserStatusFilter" />
+                                                <input type="hidden" name="page" value="@Model.CurrentPage" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-unlock me-1"></i>解除 BAN</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#banUserModal-@user.UserId"><i class="bi bi-slash-circle me-1"></i>BAN</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                var firstPage = Math.Max(1, Model.CurrentPage - 2);
+                var lastPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+
+                <nav class="mt-4" aria-label="使用者分頁">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : string.Empty)">
+                            <a class="page-link" asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@(Model.CurrentPage - 1)" asp-fragment="user-management">上一頁</a>
+                        </li>
+                        @for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++)
+                        {
+                            <li class="page-item @(pageNumber == Model.CurrentPage ? "active" : string.Empty)">
+                                <a class="page-link" asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@pageNumber" asp-fragment="user-management">@pageNumber</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : string.Empty)">
+                            <a class="page-link" asp-controller="Admin" asp-action="AdminCenter" asp-route-userKeyword="@Model.UserKeyword" asp-route-userStatus="@Model.UserStatusFilter" asp-route-page="@(Model.CurrentPage + 1)" asp-fragment="user-management">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </section>
 </div>
 
-<div class="card border-0 shadow-sm mt-4">
-    <div class="card-body">
-        <h2 class="h5">後台功能區</h2>
-        <p class="text-secondary mb-0">請從左側選單進入各項管理功能。</p>
+@foreach (var user in Model.Users.Where(user => !user.IsBlacklisted))
+{
+    var userName = user.DisplayName ?? user.Username ?? $"會員 #{user.UserId}";
+    <div class="modal fade" id="banUserModal-@user.UserId" tabindex="-1" aria-labelledby="banUserModalLabel-@user.UserId" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form asp-controller="Admin" asp-action="BanUser" method="post">
+                    <div class="modal-header bg-danger-subtle border-0">
+                        <h2 class="modal-title fs-5 text-danger-emphasis" id="banUserModalLabel-@user.UserId"><i class="bi bi-shield-exclamation me-2"></i>封鎖使用者</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>確定要封鎖 <strong>@userName</strong>（ID：@user.UserId）嗎？</p>
+                        <label for="banReason-@user.UserId" class="form-label fw-semibold">封鎖原因</label>
+                        <textarea id="banReason-@user.UserId" name="reason" class="form-control" rows="4" maxlength="500" required placeholder="請輸入違規或封鎖原因"></textarea>
+                        <input type="hidden" name="userId" value="@user.UserId" />
+                        <input type="hidden" name="userKeyword" value="@Model.UserKeyword" />
+                        <input type="hidden" name="userStatus" value="@Model.UserStatusFilter" />
+                        <input type="hidden" name="page" value="@Model.CurrentPage" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-slash-circle me-1"></i>確認 BAN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-</div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        (() => {
+        const canvas = document.getElementById('analysisChart');
+        const typeButtons = document.querySelectorAll('[data-analysis-chart-type]');
+
+        if (!canvas || typeof Chart === 'undefined') {
+        typeButtons.forEach(button => button.disabled = true);
+        return;
+        }
+
+        const analysisType = '@Model.AnalysisType';
+        const isMemberAnalysis = analysisType === 'members';
+        const labels = @Html.Raw(JsonSerializer.Serialize(analysisChartLabels));
+        const values = @Html.Raw(JsonSerializer.Serialize(analysisChartValues));
+        const currencyFormatter = new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        maximumFractionDigits: 0
+        });
+        const numberFormatter = new Intl.NumberFormat('zh-TW');
+        const formatValue = value => isMemberAnalysis
+        ? `${numberFormatter.format(value)} 人`
+        : currencyFormatter.format(value);
+        const chartColor = isMemberAnalysis ? '#0d6efd' : '#d97706';
+        const chartBackground = isMemberAnalysis
+        ? 'rgba(13, 110, 253, 0.18)'
+        : 'rgba(245, 158, 11, 0.18)';
+        const barBackground = isMemberAnalysis
+        ? 'rgba(13, 110, 253, 0.72)'
+        : 'rgba(245, 158, 11, 0.72)';
+        let analysisChart;
+
+        const renderChart = type => {
+        analysisChart?.destroy();
+        analysisChart = new Chart(canvas, {
+        type,
+        data: {
+        labels,
+        datasets: [{
+        label: isMemberAnalysis ? '新增會員' : '平台收入',
+        data: values,
+        borderColor: chartColor,
+        backgroundColor: type === 'line'
+        ? chartBackground
+        : barBackground,
+        borderWidth: 2,
+        fill: type === 'line',
+        tension: 0.3,
+        pointRadius: type === 'line' ? 3 : 0,
+        pointHoverRadius: 5
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+        intersect: false,
+        mode: 'index'
+        },
+        plugins: {
+        legend: {
+        display: false
+        },
+        tooltip: {
+        callbacks: {
+        label: context => `${isMemberAnalysis ? '新增會員' : '平台收入'}：${formatValue(context.parsed.y)}`
+        }
+        }
+        },
+        scales: {
+        y: {
+        beginAtZero: true,
+        ticks: {
+        precision: isMemberAnalysis ? 0 : undefined,
+        callback: value => formatValue(value)
+        }
+        }
+        }
+        }
+        });
+        };
+
+        typeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+        typeButtons.forEach(item => {
+        item.classList.remove('btn-dark', 'active');
+        item.classList.add('btn-outline-dark');
+        });
+
+        button.classList.remove('btn-outline-dark');
+        button.classList.add('btn-dark', 'active');
+        renderChart(button.dataset.analysisChartType);
+        });
+        });
+
+        renderChart('line');
+        })();
+    </script>
+}
 
