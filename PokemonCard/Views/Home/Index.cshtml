@@ -122,9 +122,9 @@
                     }
                     @foreach (var product in pageModel.Products)
                     {
-                        <div class="bg-white border border-[#e2bebb]/30 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
+                        <div class="cursor-pointer bg-white border border-[#e2bebb]/30 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group" onclick="window.location.href='@Url.Action("Details", "Product", new { id = product.ProductId })'">
                             <div class="relative w-full aspect-square bg-[#f4faff] p-4 flex items-center justify-center overflow-hidden">
-                                <button class="absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#5a413f] hover:text-[#EF5350] shadow-sm transition-all" type="button">
+                                <button class="absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#5a413f] hover:text-[#EF5350] shadow-sm transition-all" type="button" onclick="event.stopPropagation()">
                                     <span class="material-symbols-outlined text-[18px]">favorite</span>
                                 </button>
                                 @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
@@ -149,7 +149,7 @@
                                             <span class="text-sm font-bold text-[#5a413f]">價格請洽詢</span>
                                         }
                                     </div>
-                                    <button class="w-10 h-10 rounded-lg bg-[#42A5F5]/10 text-[#42A5F5] hover:bg-[#42A5F5] hover:text-white transition-all flex items-center justify-center shadow-sm" type="button" aria-label="加入購物車">
+                                    <button class="w-10 h-10 rounded-lg bg-[#42A5F5]/10 text-[#42A5F5] hover:bg-[#42A5F5] hover:text-white transition-all flex items-center justify-center shadow-sm" type="button" aria-label="加入購物車" onclick="event.stopPropagation()">
                                         <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
                                     </button>
                                 </div>
