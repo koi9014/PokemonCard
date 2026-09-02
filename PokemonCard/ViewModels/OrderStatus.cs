@@ -12,7 +12,7 @@
                 "SHIPPED" => "運送中",
                 "COMPLETED" => "已完成",
                 "CANCELLED" => "已取消",
-                null or "" => "未設定",
+
                 _ => "未知狀態"
             };
         }

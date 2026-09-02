@@ -24,13 +24,13 @@ namespace PokemonCard. Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> Index( string Keyword )
+        public async Task<IActionResult> Index( string? Keyword )
         {
             var data = await _context. Products
                 . Include(p => p. ProductImages)
                 . Include(p => p. ProductSpecs)
-                . Where(p => p. ProductName. Contains(Keyword))
                 . Where(p => p. ProductStatus == "PUBLISHED")
+                . Where(p => string. IsNullOrEmpty(Keyword) || p. ProductName. Contains(Keyword))
                 . ToListAsync( );
 
             return View(data);

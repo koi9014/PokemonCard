@@ -238,6 +238,175 @@
     }
 
 
+    .product-option .option-price {
+        display: block;
+        color: #dc3545;
+        font-size: 14px;
+        font-weight: 600;
+    }
+/* ==========================================
+   加入購物車成功小視窗
+
+.cart-toast {
+    position: fixed;
+    top: 80px;
+    right: 25px;
+    width: 380px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(120%);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+
+    /* 顯示 */
+
+    .cart-toast.show {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+
+
+/* ==========================================
+   Header
+
+.cart-toast-header {
+    display: flex;
+    align-items: center;
+    padding: 15px 18px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+
+.cart-success-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #28a745;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+
+    .cart-success-icon .material-symbols-outlined {
+        font-size: 20px;
+    }
+
+
+.cart-success-text {
+    font-weight: 700;
+    font-size: 16px;
+    color: #333333;
+    flex: 1;
+}
+
+
+.cart-toast-close {
+    border: none;
+    background: transparent;
+    font-size: 25px;
+    color: #999999;
+    cursor: pointer;
+    line-height: 1;
+}
+
+
+    .cart-toast-close:hover {
+        color: #333333;
+    }
+
+
+/* ==========================================
+   商品內容
+
+.cart-toast-body {
+    display: flex;
+    padding: 18px;
+}
+
+
+.cart-toast-image {
+    width: 75px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: #f5f5f5;
+    margin-right: 14px;
+}
+
+
+.cart-toast-info {
+    flex: 1;
+    min-width: 0;
+}
+
+
+.cart-toast-product-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #333333;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.cart-toast-specification {
+    font-size: 13px;
+    color: #777777;
+    margin-bottom: 10px;
+}
+
+
+.cart-toast-bottom {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: #777777;
+}
+
+
+.cart-toast-price {
+    color: #ee4d2d;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+
+/* ==========================================
+   Footer
+
+.cart-toast-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 18px;
+    background: #fafafa;
+    border-top: 1px solid #eeeeee;
+}
+
+
+/* ==========================================
+   手機版
+
+@media (max-width: 576px) {
+
+    .cart-toast {
+        width: calc(100% - 30px);
+        right: 15px;
+        top: 70px;
+    }
 .product-option .option-price {
     display: block;
     color: #dc3545;
