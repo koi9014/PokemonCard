@@ -210,28 +210,32 @@
             </div>
 
 
-            <!-- 購物按鈕 -->
+<!-- 購物按鈕 -->
 
-            <div class="row g-2 mb-4">
+<div class="row g-2 mb-4">
+
+    <!-- 加入購物車 -->
+    <div class="col-6">
+
+        <button type="button"
+                class="btn btn-cart w-100 py-2"
+                onclick="handleAddToCart()">
+
+            <span class="material-symbols-outlined align-middle">
+                shopping_cart
+            </span>
+
+            加入購物車
+
+        </button>
+
+    </div>
 
 
+
+                <!-- 立即購買 -->
                 <div class="col-6">
 
-                    <button type="button"
-                            class="btn btn-cart w-100 py-2">
-
-                        <span class="material-symbols-outlined align-middle">
-                            shopping_cart
-                        </span>
-
-                        加入購物車
-
-                    </button>
-
-                </div>
-
-
-                <div class="col-6">
                     <form asp-controller="Checkout"
                           asp-action="Index"
                           method="get">
@@ -255,10 +259,13 @@
 
                         <button type="submit"
                                 class="btn btn-buy w-100 py-2">
+
                             立即購買
+
                         </button>
 
                     </form>
+
                 </div>
 
             </div>
@@ -466,94 +473,179 @@
 </div>
 </div>
 
+<!-- ==========================================
+     加入購物車成功小視窗
+========================================== -->
+
+<div id="cartToast"
+     class="cart-toast">
+
+    <div class="cart-toast-header">
+
+        <div class="cart-success-icon">
+
+            <span class="material-symbols-outlined">
+                check
+            </span>
+
+        </div>
+
+        <div class="cart-success-text">
+
+            已加入購物車
+
+        </div>
+
+        <button type="button"
+                class="cart-toast-close"
+                onclick="closeCartToast()">
+
+            ×
+
+        </button>
+
+    </div>
+
+
+    <div class="cart-toast-body">
+
+        <img id="cartToastImage"
+             src=""
+             alt="商品圖片"
+             class="cart-toast-image">
+
+
+        <div class="cart-toast-info">
+
+            <div id="cartToastProductName"
+                 class="cart-toast-product-name">
+
+                商品名稱
+
+            </div>
+
+            <div id="cartToastSpecification"
+                 class="cart-toast-specification">
+
+                規格
+
+            </div>
+
+            <div class="cart-toast-bottom">
+
+                <span id="cartToastPrice"
+                      class="cart-toast-price">
+
+                    NT$ 0
+
+                </span>
+
+                <span>
+                    ×
+                </span>
+
+                <span id="cartToastQuantity">
+                    1
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="cart-toast-footer">
+
+        <button type="button"
+                class="btn btn-outline-secondary"
+                onclick="closeCartToast()">
+
+            繼續購物
+
+        </button>
+
+
+        <a asp-controller="Cart"
+           asp-action="Index"
+           class="btn btn-warning">
+
+            查看購物車
+
+        </a>
+
+    </div>
+
+</div>
+
 
 <!-- =====================================
      JavaScript
 ====================================== -->
-
 <script>
 
-    // ==========================
-    // 數量增加
-    // ==========================
-
-    function increaseQuantity() {
-
-        const input =
-            document.getElementById("quantity");
-
-        let quantity =
-            parseInt(input.value);
-
-        quantity++;
-
-        input.value = quantity;
-    }
-
-
-    // ==========================
-    // 數量減少
-    // ==========================
-
-    function decreaseQuantity() {
-
-        const input =
-            document.getElementById("quantity");
-
-        let quantity =
-            parseInt(input.value);
-
-        if (quantity > 1) {
-
-            quantity--;
-
-        }
-
-        input.value = quantity;
-    }
-
-
-    // ==========================
-    // 圖片放大
-    // ==========================
+    // ==========================================
+    // 商品圖片放大
+    // ==========================================
 
     document
         .querySelectorAll("#productCarousel img")
-        .forEach(function(image) {
+        .forEach(function (image) {
 
-            image.addEventListener("click", function() {
+            image.addEventListener("click", function () {
 
                 const modalImage =
                     document.getElementById("modalProductImage");
 
-                modalImage.src =
-                    this.src;
+                if (modalImage) {
+                    modalImage.src = this.src;
+
+                    // 開啟 Bootstrap Modal
+                    const modalElement =
+                        document.getElementById("imageModal");
+
+                    if (modalElement) {
+
+                        const modal =
+                            new bootstrap.Modal(modalElement);
+
+                        modal.show();
+                    }
+                }
 
             });
 
         });
-            const productCarousel =
-            document.getElementById("productCarousel");
 
-        const productIndicators =
-            document.querySelectorAll(
-                ".product-indicators button"
-            );
 
+    // ==========================================
+    // 商品圖片輪播 Indicator
+    // ==========================================
+
+    const productCarousel =
+        document.getElementById("productCarousel");
+
+    const productIndicators =
+        document.querySelectorAll(
+            ".product-indicators button"
+        );
+
+
+    if (productCarousel) {
 
         productCarousel.addEventListener(
             "slid.bs.carousel",
-            function(event) {
+            function (event) {
 
                 // 移除所有 active
-                productIndicators.forEach(function(button) {
+                productIndicators.forEach(function (button) {
 
                     button.classList.remove("active");
 
                 });
 
 
-                // 設定目前圖片的 indicator
+                // 設定目前圖片 indicator
                 if (productIndicators[event.to]) {
 
                     productIndicators[event.to]
@@ -564,164 +656,786 @@
             }
         );
 
+    }
 
-</script>
 
-<script>
-
-    // ==========================
-    // 商品規格 / 價格切換
-    // ==========================
+    // ==========================================
+    // 商品規格切換
+    // ==========================================
 
     document
         .querySelectorAll(".product-option")
-        .forEach(function(option) {
+        .forEach(function (button) {
 
-            option.addEventListener("click", function() {
+            button.addEventListener("click", function () {
 
-                // 移除其他規格的 active
+                // ----------------------------------
+                // 移除其他規格 active
+                // ----------------------------------
+
                 document
                     .querySelectorAll(".product-option")
-                    .forEach(function(item) {
+                    .forEach(function (btn) {
 
-                        item.classList.remove("active");
+                        btn.classList.remove("active");
 
                     });
 
 
-                // 設定目前規格
+                // ----------------------------------
+                // 設定目前規格 active
+                // ----------------------------------
+
                 this.classList.add("active");
 
 
-                // 取得價格
+                // ----------------------------------
+                // 取得規格資料
+                // ----------------------------------
+
                 const price =
-                    parseInt(this.dataset.price);
+                    parseInt(this.dataset.price) || 0;
+
+                const stock =
+                    parseInt(this.dataset.stock) || 0;
+
+                const specificationId =
+                    this.dataset.specificationId;
 
 
-                // 更新價格
-                document.getElementById("productPrice")
-                    .textContent =
-                    "NT$ " + price.toLocaleString();
+                // ----------------------------------
+                // 更新商品價格
+                // ----------------------------------
+
+                const productPrice =
+                    document.getElementById("productPrice");
+
+                if (productPrice) {
+
+                    productPrice.textContent =
+                        "NT$ " +
+                        price.toLocaleString();
+
+                }
+
+
+                // ----------------------------------
+                // 更新購買數量
+                // ----------------------------------
+
+                const quantity =
+                    document.getElementById("quantity");
+
+
+                if (quantity) {
+
+                    // 設定最大庫存
+                    quantity.max = stock;
+
+
+                    if (stock > 0) {
+
+                        quantity.value = 1;
+
+                    }
+                    else {
+
+                        quantity.value = 0;
+
+                    }
+
+                }
+
+
+                // ----------------------------------
+                // 更新購物車 SpecificationId
+                // ----------------------------------
+
+                const cartSpecificationId =
+                    document.getElementById(
+                        "cartSpecificationId"
+                    );
+
+                if (cartSpecificationId) {
+
+                    cartSpecificationId.value =
+                        specificationId;
+
+                }
+
+
+                // ----------------------------------
+                // 更新立即購買 SpecificationId
+                // ----------------------------------
+
+                const checkoutSpecificationId =
+                    document.getElementById(
+                        "specificationId"
+                    );
+
+                if (checkoutSpecificationId) {
+
+                    checkoutSpecificationId.value =
+                        specificationId;
+
+                }
+
+
+                // ----------------------------------
+                // 更新購物車數量
+                // ----------------------------------
+
+                const cartQuantity =
+                    document.getElementById(
+                        "cartQuantity"
+                    );
+
+                if (cartQuantity && quantity) {
+
+                    cartQuantity.value =
+                        quantity.value;
+
+                }
+
+
+                // ----------------------------------
+                // 更新立即購買數量
+                // ----------------------------------
+
+                const checkoutQuantity =
+                    document.getElementById(
+                        "checkoutQuantity"
+                    );
+
+                if (checkoutQuantity && quantity) {
+
+                    checkoutQuantity.value =
+                        quantity.value;
+
+                }
 
             });
 
         });
 
-</script>
 
-<script>
-    function increaseQuantity() {
-        const input = document.getElementById("quantity");
+    // ==========================================
+    // 增加購買數量
+    // ==========================================
 
-        let quantity = parseInt(input.value) || 1;
-        const max = parseInt(input.max);
-
-        if (quantity < max) {
-            input.value = quantity + 1;
-        }
-    }
-
-    function decreaseQuantity() {
-        const input = document.getElementById("quantity");
-
-        let quantity = parseInt(input.value) || 1;
-        const min = parseInt(input.min);
-
-        if (quantity > min) {
-            input.value = quantity - 1;
-        }
-    }
-        // 選擇規格
-    document.querySelectorAll(".product-option").forEach(function (button) {
-
-        button.addEventListener("click", function () {
-
-            // 移除其他規格 active
-            document.querySelectorAll(".product-option")
-                .forEach(function (btn) {
-                    btn.classList.remove("active");
-                });
-
-            // 設定目前規格
-            this.classList.add("active");
-
-            // 取得規格資料
-            const price = parseInt(this.dataset.price) || 0;
-            const stock = parseInt(this.dataset.stock) || 0;
-            const specificationId =
-                this.dataset.specificationId;
-
-            // 更新價格
-            document.getElementById("productPrice")
-                .textContent =
-                "NT$ " + price.toLocaleString();
-
-            // 更新數量最大值
-            const quantity =
-                document.getElementById("quantity");
-
-            quantity.max = stock;
-
-            quantity.value = stock > 0 ? 1 : 0;
-
-            // 更新要送到 Checkout 的規格 ID
-            document.getElementById("specificationId")
-                .value = specificationId;
-
-            // 更新要送到 Checkout 的數量
-            document.getElementById("checkoutQuantity")
-                .value = quantity.value;
-
-        });
-
-    });
-
-
-    // 增加數量
     function increaseQuantity() {
 
         const input =
             document.getElementById("quantity");
 
+
+        if (!input) {
+            return;
+        }
+
+
         let current =
             parseInt(input.value) || 1;
+
 
         const max =
             parseInt(input.max) || 1;
 
+
+        // 不可以超過庫存
         if (current < max) {
 
             current++;
 
             input.value = current;
 
-            document.getElementById("checkoutQuantity")
-                .value = current;
         }
+
+
+        // ----------------------------------
+        // 同步購物車數量
+        // ----------------------------------
+
+        const cartQuantity =
+            document.getElementById("cartQuantity");
+
+        if (cartQuantity) {
+
+            cartQuantity.value =
+                input.value;
+
+        }
+
+
+        // ----------------------------------
+        // 同步立即購買數量
+        // ----------------------------------
+
+        const checkoutQuantity =
+            document.getElementById(
+                "checkoutQuantity"
+            );
+
+        if (checkoutQuantity) {
+
+            checkoutQuantity.value =
+                input.value;
+
+        }
+
     }
 
 
-    // 減少數量
+    // ==========================================
+    // 減少購買數量
+    // ==========================================
+
     function decreaseQuantity() {
 
         const input =
             document.getElementById("quantity");
 
+
+        if (!input) {
+            return;
+        }
+
+
         let current =
             parseInt(input.value) || 1;
+
 
         const min =
             parseInt(input.min) || 1;
 
+
+        // 不可以低於 1
         if (current > min) {
 
             current--;
 
             input.value = current;
 
-            document.getElementById("checkoutQuantity")
-                .value = current;
         }
+
+
+        // ----------------------------------
+        // 同步購物車數量
+        // ----------------------------------
+
+        const cartQuantity =
+            document.getElementById("cartQuantity");
+
+        if (cartQuantity) {
+
+            cartQuantity.value =
+                input.value;
+
+        }
+
+
+        // ----------------------------------
+        // 同步立即購買數量
+        // ----------------------------------
+
+        const checkoutQuantity =
+            document.getElementById(
+                "checkoutQuantity"
+            );
+
+        if (checkoutQuantity) {
+
+            checkoutQuantity.value =
+                input.value;
+
+        }
+
+    }
+
+</script>
+<script>
+
+    // ==========================================
+    // 加入購物車
+    // ==========================================
+
+    const addToCartForm =
+        document.getElementById("addToCartForm");
+
+
+    if (addToCartForm) {
+
+        addToCartForm.addEventListener(
+            "submit",
+            async function (event) {
+
+                // 防止表單重新整理
+                event.preventDefault();
+
+
+                // ----------------------------------
+                // 取得資料
+                // ----------------------------------
+
+                const productId =
+                    document.getElementById(
+                        "cartProductId"
+                    ).value;
+
+
+                const specificationId =
+                    document.getElementById(
+                        "cartSpecificationId"
+                    ).value;
+
+
+                const quantity =
+                    document.getElementById(
+                        "cartQuantity"
+                    ).value;
+
+
+                // ----------------------------------
+                // 建立 FormData
+                // ----------------------------------
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "productId",
+                    productId
+                );
+
+
+                formData.append(
+                    "specificationId",
+                    specificationId
+                );
+
+
+                formData.append(
+                    "quantity",
+                    quantity
+                );
+
+
+                try {
+
+                    // ----------------------------------
+                    // 呼叫 CartController
+                    // ----------------------------------
+
+                    const response =
+                        await fetch(
+                            "/Cart/Add",
+                            {
+                                method: "POST",
+
+                                body: formData
+                            }
+                        );
+
+
+                    // ----------------------------------
+                    // 取得 JSON
+                    // ----------------------------------
+
+                    const result =
+                        await response.json();
+
+
+                    // ----------------------------------
+                    // 成功
+                    // ----------------------------------
+
+                    if (result.success) {
+
+                        showCartToast();
+
+                    }
+                    else {
+
+                        alert("加入購物車失敗");
+
+                    }
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "加入購物車錯誤：",
+                        error
+                    );
+
+                    alert(
+                        "加入購物車失敗，請稍後再試。"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // ==========================================
+    // 顯示購物車小視窗
+    // ==========================================
+
+    function showCartToast() {
+
+        const toast =
+            document.getElementById(
+                "cartToast"
+            );
+
+
+        if (!toast) {
+            return;
+        }
+
+
+        // ----------------------------------
+        // 商品名稱
+        // ----------------------------------
+
+const productName =
+    document.getElementById("cartToastProductName");
+
+if (productName) {
+    productName.textContent =
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProductName));
+}
+
+
+        // ----------------------------------
+        // 商品圖片
+        // ----------------------------------
+
+        const image =
+            document.querySelector(
+                "#productCarousel .carousel-item.active img"
+            );
+
+
+        const toastImage =
+            document.getElementById(
+                "cartToastImage"
+            );
+
+
+        if (image && toastImage) {
+
+            toastImage.src =
+                image.src;
+
+        }
+
+
+        // ----------------------------------
+        // 規格
+        // ----------------------------------
+
+        const activeOption =
+            document.querySelector(
+                ".product-option.active"
+            );
+
+
+        const specification =
+            document.getElementById(
+                "cartToastSpecification"
+            );
+
+
+        if (activeOption && specification) {
+
+            const optionName =
+                activeOption.querySelector(
+                    ".option-name"
+                );
+
+
+            if (optionName) {
+
+                specification.textContent =
+                    "規格：" +
+                    optionName.textContent.trim();
+
+            }
+
+        }
+
+
+        // ----------------------------------
+        // 價格
+        // ----------------------------------
+
+        const price =
+            document.getElementById(
+                "productPrice"
+            );
+
+
+        const toastPrice =
+            document.getElementById(
+                "cartToastPrice"
+            );
+
+
+        if (price && toastPrice) {
+
+            toastPrice.textContent =
+                price.textContent;
+
+        }
+
+
+        // ----------------------------------
+        // 數量
+        // ----------------------------------
+
+        const quantity =
+            document.getElementById(
+                "quantity"
+            );
+
+
+        const toastQuantity =
+            document.getElementById(
+                "cartToastQuantity"
+            );
+
+
+        if (quantity && toastQuantity) {
+
+            toastQuantity.textContent =
+                quantity.value;
+
+        }
+
+
+        // ----------------------------------
+        // 顯示
+        // ----------------------------------
+
+        toast.classList.add("show");
+
+
+        // ----------------------------------
+        // 5 秒後自動關閉
+        // ----------------------------------
+
+        clearTimeout(
+            window.cartToastTimer
+        );
+
+
+        window.cartToastTimer =
+            setTimeout(function () {
+
+                closeCartToast();
+
+            }, 5000);
+
+    }
+
+
+    // ==========================================
+    // 關閉購物車小視窗
+    // ==========================================
+
+    function closeCartToast() {
+
+        const toast =
+            document.getElementById(
+                "cartToast"
+            );
+
+
+        if (toast) {
+
+            toast.classList.remove(
+                "show"
+            );
+
+        }
+
+    }
+
+</script>
+
+<script>
+
+    function handleAddToCart() {
+
+        // ==========================================
+        // 商品 ID
+        // ==========================================
+
+        const productId =
+            @Model.ProductId;
+
+
+        // ==========================================
+        // 取得目前選中的規格
+        // ==========================================
+
+        const selectedOption =
+            document.querySelector(
+                ".product-option.active"
+            );
+
+
+        if (!selectedOption) {
+
+            alert("請先選擇商品規格");
+
+            return;
+        }
+
+
+        // ==========================================
+        // 規格 ID
+        // ==========================================
+
+        const specificationId =
+            selectedOption.dataset.specificationId;
+
+
+        // ==========================================
+        // 購買數量
+        // ==========================================
+
+        const quantityInput =
+            document.getElementById("quantity");
+
+
+        const quantity =
+            parseInt(quantityInput.value) || 1;
+
+
+        // ==========================================
+        // 商品名稱
+        // ==========================================
+
+        const productName =
+            document.getElementById(
+                "cartToastProductName"
+            );
+
+
+        if (productName) {
+
+            productName.textContent =
+                "@Html.Raw(Model.ProductName)";
+
+        }
+
+
+        // ==========================================
+        // 商品價格
+        // ==========================================
+
+        const price =
+            selectedOption.dataset.price;
+
+
+        const priceElement =
+            document.getElementById(
+                "cartToastPrice"
+            );
+
+
+        if (priceElement) {
+
+            priceElement.textContent =
+                "NT$ " +
+                Number(price)
+                    .toLocaleString();
+
+        }
+
+
+        // ==========================================
+        // 商品規格
+        // ==========================================
+
+        const specification =
+            document.getElementById(
+                "cartToastSpecification"
+            );
+
+
+        if (specification) {
+
+            specification.textContent =
+                selectedOption
+                    .querySelector(".option-name")
+                    .textContent
+                    .trim();
+
+        }
+
+
+        // ==========================================
+        // 數量
+        // ==========================================
+
+        const toastQuantity =
+            document.getElementById(
+                "cartToastQuantity"
+            );
+
+
+        if (toastQuantity) {
+
+            toastQuantity.textContent =
+                quantity;
+
+        }
+
+
+        // ==========================================
+        // 商品圖片
+        // ==========================================
+
+        const firstImage =
+            document.querySelector(
+                "#productCarousel .carousel-item.active img"
+            );
+
+
+        const toastImage =
+            document.getElementById(
+                "cartToastImage"
+            );
+
+
+        if (
+            firstImage &&
+            toastImage
+        ) {
+
+            toastImage.src =
+                firstImage.src;
+
+        }
+
+
+        // ==========================================
+        // 呼叫 CartController
+        // ==========================================
+
+        addToCart(
+            productId,
+            specificationId,
+            quantity
+        );
+
     }
 
 </script>

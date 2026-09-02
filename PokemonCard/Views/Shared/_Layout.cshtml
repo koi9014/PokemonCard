@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PokemonCard</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/Cart.css" />
+    <script src="~/js/Cart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
@@ -98,8 +100,29 @@
                     }
 
                     <!-- 購物車按鈕 -->
-                    <a class="p-2 rounded-lg hover:bg-slate-100 text-[#42A5F5] transition-all" href="#"><span class="material-symbols-outlined">shopping_cart</span></a>
-                </div>
+                    <a asp-controller="Cart"
+                       asp-action="Index"
+                       class="relative p-2 rounded-lg hover:bg-slate-100 text-[#42A5F5] transition-all">
+
+                        <span class="material-symbols-outlined">
+                            shopping_cart
+                        </span>
+
+
+                        <!-- 購物車數量紅點 -->
+                        <span id="cartCount"
+                              class="absolute -top-1 -right-1
+                            bg-red-500 text-white
+                            text-xs font-bold
+                            rounded-full
+                            min-w-[20px] h-[20px]
+                            px-1
+                            flex items-center justify-center
+                            hidden">
+                            0
+                        </span>
+
+                    </a>
 
                 @if (User.Identity!.IsAuthenticated)
                 {

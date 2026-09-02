@@ -1,0 +1,710 @@
+﻿@model List<PokemonCard.ViewModels.CartItemViewModel>
+
+@{
+    ViewData["Title"] = "購物車";
+}
+
+<div class="container py-5">
+
+    <!-- 標題 -->
+
+    <div class="d-flex align-items-center mb-4">
+
+        <span class="material-symbols-outlined text-warning me-2"
+              style="font-size:32px;">
+            shopping_cart
+        </span>
+
+        <h2 class="fw-bold mb-0">
+            我的購物車
+        </h2>
+
+    </div>
+
+
+    @if(!Model.Any( ))
+    {
+        <!-- =====================================
+             空購物車
+        ====================================== -->
+
+        <div class="text-center py-5">
+
+            <span class="material-symbols-outlined text-muted"
+                  style="font-size:80px;">
+                shopping_cart
+            </span>
+
+            <h4 class="mt-3 fw-bold">
+                購物車是空的
+            </h4>
+
+            <p class="text-muted">
+                快去挑選你喜歡的寶可夢卡牌吧！
+            </p>
+
+            <a asp-controller="Home"
+               asp-action="Index"
+               class="btn btn-warning px-4">
+
+                繼續購物
+
+            </a>
+
+        </div>
+    }
+    else
+    {
+        <!-- =====================================
+             購物車內容
+        ====================================== -->
+
+        <div class="row g-4">
+
+            <!-- =====================================
+                 左邊商品
+            ====================================== -->
+
+            <div class="col-lg-8">
+
+                <div class="card border-0 shadow-sm">
+
+                    <div class="card-body p-0">
+
+                        @foreach(var item in Model)
+                        {
+                            <div class="cart-item p-4 border-bottom">
+
+                                <div class="row align-items-center g-3">
+
+                                    <!-- =====================================
+                                         商品圖片
+                                    ====================================== -->
+
+                                    <div class="col-auto">
+
+                                        <img src="@item.ProductImage"
+                                             alt="@item.ProductName"
+                                             style="
+                                        width:100px;
+                                        height:100px;
+                                        object-fit:cover;
+                                        border-radius:10px;
+                                        " />
+
+                                    </div>
+
+
+                                    <!-- =====================================
+                                         商品資訊
+                                    ====================================== -->
+
+                                    <div class="col">
+
+                                        <h5 class="fw-bold mb-2">
+
+                                            @item.ProductName
+
+                                        </h5>
+
+
+                                        <div class="text-muted small mb-2">
+
+                                            規格：
+
+                                            <span class="fw-semibold">
+                                                @item.SpecificationName
+                                            </span>
+
+                                        </div>
+
+
+                                        <!-- 單價 -->
+
+                                        <div class="text-muted">
+
+                                            單價：
+
+                                            <span class="fw-semibold">
+                                                NT$ @item.Price.ToString("N0")
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <!-- =====================================
+                                         數量
+                                    ====================================== -->
+
+                                    <div class="col-auto">
+
+                                        <div class="input-group"
+                                             style="width:140px;">
+
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary quantity-minus"
+                                                    data-product-id="@item.ProductId"
+                                                    data-specification-id="@item.SpecificationId">
+
+                                                −
+
+                                            </button>
+
+
+                                            <input type="text"
+                                                   class="form-control text-center quantity-input"
+                                                   value="@item.Quantity"
+                                                   data-product-id="@item.ProductId"
+                                                   data-specification-id="@item.SpecificationId"
+                                                   data-max="@item.Stock"
+                                                   readonly />
+
+
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary quantity-plus"
+                                                    data-product-id="@item.ProductId"
+                                                    data-specification-id="@item.SpecificationId">
+
+                                                ＋
+
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <!-- =====================================
+                                         小計
+                                    ====================================== -->
+
+                                    <div class="col-auto text-end">
+
+                                        <div class="text-muted small">
+                                            小計
+                                        </div>
+
+
+                                        <!-- ⭐ 注意這裡 -->
+
+                                        <div class="fw-bold fs-5 cart-subtotal"
+                                             data-product-id="@item.ProductId"
+                                             data-specification-id="@item.SpecificationId"
+                                             data-price="@item.Price">
+
+                                            NT$
+                                            @item.SubTotal.ToString("N0")
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <!-- =====================================
+                                         刪除
+                                    ====================================== -->
+
+                                    <div class="col-auto">
+
+                                        <button type="button"
+                                                class="btn btn-link text-danger delete-cart-item"
+                                                data-product-id="@item.ProductId"
+                                                data-specification-id="@item.SpecificationId">
+
+                                            <span class="material-symbols-outlined">
+                                                delete
+                                            </span>
+
+                                        </button>
+
+
+
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 右邊訂單摘要
+            ====================================== -->
+
+            <div class="col-lg-4">
+
+                <div class="card border-0 shadow-sm">
+
+                    <div class="card-body p-4">
+
+                        <h5 class="fw-bold mb-4">
+                            訂單摘要
+                        </h5>
+
+
+                        @{
+                            var total =
+                                Model.Sum(x => x.SubTotal);
+                        }
+
+
+                        <!-- 商品總額 -->
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span class="text-muted">
+                                商品總額
+                            </span>
+
+                            <span class="fw-semibold">
+
+                                NT$
+                                <span id="cartSubtotal">
+                                    @total.ToString("N0")
+                                </span>
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- 運費 -->
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span class="text-muted">
+                                運費
+                            </span>
+
+                            <span>
+                                NT$ 0
+                            </span>
+
+                        </div>
+
+
+                        <hr />
+
+
+                        <!-- 總計 -->
+
+                        <div class="d-flex justify-content-between mb-4">
+
+                            <span class="fw-bold">
+                                總計
+                            </span>
+
+                            <span class="fw-bold text-danger fs-4">
+
+                                NT$
+                                <span id="cartTotal">
+                                    @total.ToString("N0")
+                                </span>
+
+                            </span>
+
+                        </div>
+
+
+                        <a asp-controller="Checkout"
+                           asp-action="Index"
+                           class="btn btn-warning w-100 py-3 fw-bold">
+
+                            前往結帳
+
+                        </a>
+
+                        <a asp-controller="Home"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary w-100 mt-2">
+
+                            繼續購物
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+
+<!-- ==========================================
+     JavaScript
+========================================== -->
+
+<script>
+
+    // ==========================================
+    // 找到指定商品的數量
+    // ==========================================
+
+    function getQuantityInput(productId, specificationId) {
+
+        return document.querySelector(
+            `.quantity-input[data-product-id="${productId}"][data-specification-id="${specificationId}"]`
+        );
+
+    }
+
+
+    // ==========================================
+    // 更新所有價格
+    // ==========================================
+
+    function updateCartPrices() {
+
+        let total = 0;
+
+
+        // 找出所有商品的小計
+        document
+            .querySelectorAll(".cart-subtotal")
+            .forEach(function (subtotalElement) {
+
+                // 商品單價
+                const price =
+                    parseFloat(
+                        subtotalElement.dataset.price
+                    ) || 0;
+
+
+                // 商品 ID
+                const productId =
+                    subtotalElement.dataset.productId;
+
+
+                // 規格 ID
+                const specificationId =
+                    subtotalElement.dataset.specificationId;
+
+
+                // 找到數量
+                const quantityInput =
+                    getQuantityInput(
+                        productId,
+                        specificationId
+                    );
+
+
+                if (!quantityInput) {
+                    return;
+                }
+
+
+                // 商品數量
+                const quantity =
+                    parseInt(quantityInput.value) || 1;
+
+
+                // 計算小計
+                const subtotal =
+                    price * quantity;
+
+
+                // 更新商品小計
+                subtotalElement.textContent =
+                    "NT$ " +
+                    subtotal.toLocaleString();
+
+
+                // 累加總金額
+                total += subtotal;
+
+            });
+
+
+        // ==========================================
+        // 更新「商品總額」
+        // ==========================================
+
+        const cartSubtotal =
+            document.getElementById("cartSubtotal");
+
+
+        if (cartSubtotal) {
+
+            cartSubtotal.textContent =
+                total.toLocaleString();
+
+        }
+
+
+        // ==========================================
+        // 更新「總計」
+        // ==========================================
+
+        const cartTotal =
+            document.getElementById("cartTotal");
+
+
+        if (cartTotal) {
+
+            cartTotal.textContent =
+                total.toLocaleString();
+
+        }
+
+    }
+
+
+    // ==========================================
+    // 減少數量
+    // ==========================================
+
+    document
+        .querySelectorAll(".quantity-minus")
+        .forEach(function (button) {
+
+            button.addEventListener("click", function () {
+
+                const productId =
+                    this.dataset.productId;
+
+
+                const specificationId =
+                    this.dataset.specificationId;
+
+
+                const input =
+                    getQuantityInput(
+                        productId,
+                        specificationId
+                    );
+
+
+                if (!input) {
+                    return;
+                }
+
+
+                let quantity =
+                    parseInt(input.value) || 1;
+
+
+                // 最少只能買 1 個
+                if (quantity > 1) {
+
+                    quantity--;
+
+                    input.value = quantity;
+
+
+                    // 更新價格
+                    updateCartPrices();
+
+                }
+
+            });
+
+        });
+
+
+    // ==========================================
+    // 增加數量
+    // ==========================================
+
+    document
+        .querySelectorAll(".quantity-plus")
+        .forEach(function (button) {
+
+            button.addEventListener("click", function () {
+
+                const productId =
+                    this.dataset.productId;
+
+
+                const specificationId =
+                    this.dataset.specificationId;
+
+
+                const input =
+                    getQuantityInput(
+                        productId,
+                        specificationId
+                    );
+
+
+                if (!input) {
+                    return;
+                }
+
+
+                let quantity =
+                    parseInt(input.value) || 1;
+
+
+                // 最大庫存
+                const max =
+                    parseInt(input.dataset.max) || 999;
+
+
+                // 不可以超過庫存
+                if (quantity < max) {
+
+                    quantity++;
+
+                    input.value = quantity;
+
+
+                    // 更新價格
+                    updateCartPrices();
+
+                }
+
+            });
+
+        });
+
+
+    // ==========================================
+    // 頁面載入時先計算一次
+    // ==========================================
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            updateCartPrices();
+
+        }
+    );
+    // ==========================================
+    // 刪除商品
+    // ==========================================
+
+    document
+        .querySelectorAll(".quantity-delete")
+        .forEach(function(button) {
+
+            button.addEventListener("click", function() {
+
+                const productId =
+                    this.dataset.productId;
+
+                const specificationId =
+                    this.dataset.specificationId;
+
+                const cartItem =
+                    this.closest(".cart-item");
+
+
+                if (!cartItem) {
+                    return;
+                }
+
+
+                // 確認是否刪除
+                if (!confirm("確定要刪除這個商品嗎？")) {
+                    return;
+                }
+
+
+                fetch("/Cart/RemoveFromCart", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+
+                    body:
+                        `productId=${encodeURIComponent(productId)}` +
+                        `&specificationId=${encodeURIComponent(specificationId)}`
+
+                })
+                    .then(response => response.json())
+                    .then(data => {
+
+                        if (data.success) {
+
+                            // 移除畫面上的商品
+                            cartItem.remove();
+
+                            // 更新價格
+                            updateCartPrices();
+
+                        }
+                        else {
+
+                            alert(data.message || "刪除失敗");
+
+                        }
+
+                    })
+                    .catch(error => {
+
+                        console.error(error);
+
+                        alert("刪除商品時發生錯誤");
+
+                    });
+
+            });
+
+        });
+
+    document.querySelectorAll(".delete-cart-item")
+        .forEach(function(button) {
+
+            button.addEventListener("click", function() {
+
+                const productId =
+                    this.dataset.productId;
+
+                const specificationId =
+                    this.dataset.specificationId;
+
+
+                fetch("/Cart/RemoveFromCart", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body:
+                        `productId=${productId}&specificationId=${specificationId}`
+                        + `&specificationId=${specificationId}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+
+                        if (data.success) {
+
+                            // 直接重新整理購物車
+                            location.reload();
+
+                        } else {
+
+                            alert(data.message);
+
+                        }
+
+                    })
+                    .catch(error => {
+
+                        console.error(error);
+
+                        alert("刪除商品時發生錯誤");
+
+                    });
+
+            });
+
+        });
+
+
+</script>
