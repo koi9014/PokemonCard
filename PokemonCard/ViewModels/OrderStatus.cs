@@ -2,9 +2,9 @@
 {
     public static class OrderStatus
     {
-        public static string GetText( string status )
+        public static string GetText( string? status )
         {
-            return status switch
+            return status?.Trim().ToUpperInvariant() switch
             {
                 "PENDING" => "待付款",
                 "PAID" => "已付款",

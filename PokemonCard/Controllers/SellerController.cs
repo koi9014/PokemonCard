@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using PokemonCard.Models;
 using System.Security.Claims;
+using PokemonCard.ViewModels;
 
 namespace PokemonCard.Controllers;
 
@@ -29,6 +30,27 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     }
 
     private static bool IsOrderActionable(string status) => status is not ("SHIPPED" or "COMPLETED" or "CANCELLED");
+
+    private static string GetRemitStatusText(string? remitResult, string? remitStatus)
+    {
+        if (!string.IsNullOrWhiteSpace(remitResult))
+        {
+            return remitResult switch
+            {
+                "撥款成功" or "匯款完成" or "SUCCESS" => "撥款完成",
+                "撥款失敗" or "撥款取消" or "CANCELLED" => "撥款取消",
+                _ => remitResult
+            };
+        }
+
+        return remitStatus switch
+        {
+            "PENDING" => "待撥款",
+            "COMPLETED" or "SUCCESS" => "撥款完成",
+            "CANCELLED" or "FAILED" => "撥款取消",
+            _ => "待撥款"
+        };
+    }
 
     [HttpGet]
     public async Task<IActionResult> SellerHomepage(DateTime? startDate, DateTime? endDate)
@@ -579,7 +601,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             if (isUpdate && product == null) return NotFound();
             var existingPublishedAt = product?.PublishedAt;
             product ??= new Product { UserId = sellerId.Value, CreatedAt = now };
-            product.ProductName = input.ProductName.Trim();
+            product.ProductName = input.ProductName?.Trim() ?? string.Empty;
             product.Description = input.Description?.Trim();
             product.Location = input.Location;
             product.ProductType = input.ProductType;
@@ -623,11 +645,14 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             {
                 ProductId = product.ProductId,
                 PreSale = input.SaleType == "preorder",
-                SpecsCategory1 = spec.Option.Trim(),
+                SpecsCategory1 = spec.Option!.Trim(), // 加 ! 避開 null 警告
                 SpecsCategory2 = string.IsNullOrWhiteSpace(spec.Category) ? null : spec.Category.Trim(),
-                SpecsPrice = spec.Price,
-                Deposit = spec.Deposit,
-                Stock = spec.Stock,
+
+                // 使用 ?? 0 將 decimal? 與 int? 轉回一般 decimal 與 int
+                SpecsPrice = (int)(spec.Price ?? 0),
+                Stock = (int)(spec.Stock ?? 0),
+                Deposit = (int)(spec.Deposit ?? 0),
+
                 SpecsCreatedAt = now,
                 SpecsUpdatedAt = now
             }));
@@ -681,28 +706,24 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
 
     private void ValidateProduct(AddProductInput input, List<ProductSpecInput> specs)
     {
-        if (string.IsNullOrWhiteSpace(input.ProductName))
-            ModelState.AddModelError(nameof(input.ProductName), "請輸入商品名稱。");
-        if (input.ProductName?.Length > 50)
-            ModelState.AddModelError(nameof(input.ProductName), "商品名稱最多 50 字。");
-        if (input.Description?.Length > 500)
-            ModelState.AddModelError(nameof(input.Description), "商品描述最多 500 字。");
-        if (string.IsNullOrWhiteSpace(input.Location))
-            ModelState.AddModelError(nameof(input.Location), "請選擇地區。");
-        if (string.IsNullOrWhiteSpace(input.ProductType))
-            ModelState.AddModelError(nameof(input.ProductType), "請選擇商品分類。");
-        if (input.ProductStatus is not ("PUBLISHED" or "DRAFT"))
-            ModelState.AddModelError(nameof(input.ProductStatus), "請選擇商品狀態。");
         if (input.Images?.Count > 9)
             ModelState.AddModelError(nameof(input.Images), "商品照片最多 9 張。");
-        if (input.Images?.Any(file => file.Length == 0 || file.Length > 5 * 1024 * 1024 || !new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(Path.GetExtension(file.FileName).ToLowerInvariant())) == true)
+
+        if (input.Images?.Any(file => file.Length == 0 || file.Length > 5 * 1024 * 1024 ||
+            !new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(Path.GetExtension(file.FileName).ToLowerInvariant())) == true)
             ModelState.AddModelError(nameof(input.Images), "照片僅限 JPG、PNG、WEBP，且每張不得超過 5 MB。");
-        if (specs.Count == 0)
+
+        // 規格組數檢查
+        if (input.Specs == null || input.Specs.Count == 0)
             ModelState.AddModelError(nameof(input.Specs), "請至少新增一組商品規格。");
-        if (specs.Any(spec => string.IsNullOrWhiteSpace(spec.Option) || spec.Price < 0 || spec.Stock < 0 || spec.Deposit < 0))
-            ModelState.AddModelError(nameof(input.Specs), "請完整填寫規格選項、價格、庫存與有效訂金。");
-        if (specs.GroupBy(spec => $"{(spec.Category ?? string.Empty).Trim()}\u001f{(spec.Option ?? string.Empty).Trim()}", StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1))
+
+        // 規格重複檢查
+        if (input.Specs != null && input.Specs
+            .GroupBy(spec => $"{(spec.Category ?? string.Empty).Trim()}\u001f{(spec.Option ?? string.Empty).Trim()}", StringComparer.OrdinalIgnoreCase)
+            .Any(group => group.Count() > 1))
+        {
             ModelState.AddModelError(nameof(input.Specs), "同一規格類別不可有重複的商品選項。");
+        }
     }
 
     [HttpGet]
@@ -724,7 +745,15 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         }
 
         if (!string.IsNullOrWhiteSpace(status) && status != "全部")
-            reconciliations = reconciliations.Where(item => item.RemitResult == status);
+        {
+            reconciliations = status switch
+            {
+                "待撥款" => reconciliations.Where(item => item.RemitStatus == "PENDING" || item.RemitResult == "待撥款"),
+                "撥款完成" => reconciliations.Where(item => item.RemitStatus == "COMPLETED" || item.RemitStatus == "SUCCESS" || item.RemitResult == "撥款完成" || item.RemitResult == "撥款成功" || item.RemitResult == "匯款完成"),
+                "撥款取消" => reconciliations.Where(item => item.RemitStatus == "CANCELLED" || item.RemitStatus == "FAILED" || item.RemitResult == "撥款取消" || item.RemitResult == "撥款失敗"),
+                _ => reconciliations
+            };
+        }
 
         ViewBag.StartDate = startDate?.ToString("yyyy-MM-dd");
         ViewBag.EndDate = endDate?.ToString("yyyy-MM-dd");
@@ -735,6 +764,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             {
                 OrderNo = item.Order != null ? item.Order.OrderNo : "-",
                 RemitResult = item.RemitResult,
+                RemitStatus = item.RemitStatus,
                 OrderAmount = item.OrderAmount,
                 PlatformRevenue = item.PlatformRevenue,
                 AdjustAmount = item.AdjustAmount,
@@ -743,24 +773,11 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             })
             .ToListAsync();
 
+        foreach (var item in model)
+            item.RemitResult = GetRemitStatusText(item.RemitResult, item.RemitStatus);
+
         return View(model);
     }
-}
-
-public class AddProductInput
-{
-    public int ProductId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string? Location { get; set; }
-    public string? ProductType { get; set; }
-    public string SaleType { get; set; } = "preorder";
-    public DateTime? ScheduledAt { get; set; }
-    public string ProductStatus { get; set; } = "PUBLISHED";
-    public List<IFormFile>? Images { get; set; }
-    public List<string> ExistingImages { get; set; } = [];
-    public List<string> RemoveImageUrls { get; set; } = [];
-    public List<ProductSpecInput> Specs { get; set; } = [];
 }
 
 public class ProductManageViewModel
@@ -837,11 +854,4 @@ public class StoreSettingInput
     public string? AvatarUrl { get; set; }
 }
 
-public class ProductSpecInput
-{
-    public string? Category { get; set; }
-    public string Option { get; set; } = string.Empty;
-    public int Price { get; set; }
-    public int? Deposit { get; set; }
-    public int Stock { get; set; }
-}
+

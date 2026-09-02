@@ -1,17 +1,18 @@
 @model PokemonCard.Controllers.SellerOrderManageViewModel
 @{
     Layout = "~/Views/MyAccount/MemberLayout.cshtml";
-    string StatusText(string status) => status switch
+    string StatusText(string? status) => (status?.Trim().ToUpperInvariant()) switch
     {
         "PENDING" => "待付款",
         "PAID" => "已付款",
-        "PROCESSING" or "Processing" => "待出貨",
+        "PROCESSING" => "待出貨",
         "SHIPPED" => "已出貨",
         "COMPLETED" => "已完成",
         "CANCELLED" => "已取消",
-        _ => status
+        null or "" => "未設定",
+        _ => status!.Trim()
     };
-    string StatusClass(string status) => status switch
+    string StatusClass(string? status) => status?.Trim().ToUpperInvariant() switch
     {
         "SHIPPED" => "bg-blue-50 text-blue-700",
         "COMPLETED" => "bg-green-50 text-green-700",
@@ -81,8 +82,8 @@
                                         <td class="px-4 py-4 font-semibold">@item.OrderNo</td>
                                         <td class="px-4 py-4">@item.Username</td>
                                         <td class="px-4 py-4 text-right font-bold">NT$ @item.OrderAmount.ToString("N0")</td>
-                                        <td class="px-4 py-4 text-center"><span class="inline-flex rounded-full px-3 py-1 text-xs font-bold @StatusClass(item.OrderStatus)">@StatusText(item.OrderStatus)</span></td>
-                                        <td class="px-4 py-4 text-right"><button type="button" class="font-semibold text-[#00609a] hover:text-[#0079c1]">詳情</button></td>
+                                        <td class="px-4 py-4 text-center"><span class="inline-flex rounded-full px-3 py-1 text-sm font-bold @StatusClass(item.OrderStatus)">@StatusText(item.OrderStatus)</span></td>
+                                        <td class="px-4 py-4 text-right"><a asp-controller="MyAccount" asp-action="OrderDetail" asp-route-id="@item.OrderId" class="font-semibold text-[#00609a] no-underline hover:text-[#0079c1]">詳情</a></td>
                                     </tr>
                                 }
                             }
