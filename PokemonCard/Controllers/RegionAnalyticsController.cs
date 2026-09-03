@@ -33,7 +33,7 @@ public class RegionAnalyticsController : Controller
     }
 
     /// <summary>
-    /// 回傳地區訂購件數、銷售額、訂單數與按月趨勢。
+    /// 回傳地區訂購件數、銷售額、訂單數、商品種類占比、熱門商品與資料期間。
     /// 目前保留所有訂單狀態，讓管理者可先完整檢視資料；後續可再加上狀態篩選。
     /// </summary>
     [HttpGet]
@@ -46,6 +46,18 @@ public class RegionAnalyticsController : Controller
             select new
             {
                 product.Location,
+                // ===== [地區商品種類視覺化新增開始] 提供各地區商品種類占比資料 =====
+                product.ProductType,
+                // ===== [地區商品種類視覺化新增結束] =====
+                // ===== [地區熱門商品 Top 1 新增開始] 取用訂單快照名稱與目前商品首圖 =====
+                item.ProductId,
+                item.ProductName,
+                ImageUrl = product.ProductImages
+                    .OrderBy(image => image.ImageOrder)
+                    .ThenBy(image => image.ImageId)
+                    .Select(image => image.ImageUrl)
+                    .FirstOrDefault(),
+                // ===== [地區熱門商品 Top 1 新增結束] =====
                 item.OrderId,
                 item.Quantity,
                 item.UnitPrice,
@@ -57,7 +69,14 @@ public class RegionAnalyticsController : Controller
             .Select(item => new
             {
                 Region = GetRegionFromLocation(item.Location),
-                Location = string.IsNullOrWhiteSpace(item.Location) ? "（空白）" : item.Location.Trim(),
+                // ===== [地區商品種類視覺化新增開始] 統一空白商品種類的顯示名稱 =====
+                ProductType = string.IsNullOrWhiteSpace(item.ProductType) ? "未分類" : item.ProductType.Trim(),
+                // ===== [地區商品種類視覺化新增結束] =====
+                // ===== [地區熱門商品 Top 1 新增開始] =====
+                item.ProductId,
+                ProductName = string.IsNullOrWhiteSpace(item.ProductName) ? "未命名商品" : item.ProductName.Trim(),
+                item.ImageUrl,
+                // ===== [地區熱門商品 Top 1 新增結束] =====
                 item.OrderId,
                 item.Quantity,
                 item.UnitPrice,
@@ -75,49 +94,62 @@ public class RegionAnalyticsController : Controller
                     region,
                     orderQuantity = items.Sum(item => (long)item.Quantity),
                     salesAmount = items.Sum(item => (long)item.Quantity * item.UnitPrice),
-                    orderCount = items.Select(item => item.OrderId).Distinct().LongCount()
+                    orderCount = items.Select(item => item.OrderId).Distinct().LongCount(),
+                    // ===== [地區商品種類視覺化新增開始] 環形占比圖統計 =====
+                    productTypes = items
+                        .GroupBy(item => item.ProductType)
+                        .Select(group => new
+                        {
+                            productType = group.Key,
+                            orderQuantity = group.Sum(item => (long)item.Quantity)
+                        })
+                        .OrderByDescending(item => item.orderQuantity)
+                        .ThenBy(item => item.productType)
+                        .ToList(),
+                    // ===== [地區商品種類視覺化新增結束] =====
+                    // ===== [地區熱門商品 Top 1 新增開始] 依訂購件數選出單一商品 =====
+                    topProduct = items
+                        .GroupBy(item => new
+                        {
+                            item.ProductId,
+                            item.ProductName,
+                            item.ImageUrl
+                        })
+                        .Select(group => new
+                        {
+                            productId = group.Key.ProductId,
+                            productName = group.Key.ProductName,
+                            imageUrl = group.Key.ImageUrl,
+                            orderQuantity = group.Sum(item => (long)item.Quantity)
+                        })
+                        .OrderByDescending(item => item.orderQuantity)
+                        .ThenBy(item => item.productName)
+                        .FirstOrDefault()
+                    // ===== [地區熱門商品 Top 1 新增結束] =====
                 };
             })
             .ToList();
 
-        var monthlyTrend = classifiedItems
+
+        var classifiedOrderDates = classifiedItems
             .Where(item => item.Region is not null)
-            .GroupBy(item => new
-            {
-                Region = item.Region!,
-                Month = new DateTime(item.OrderedAt.Year, item.OrderedAt.Month, 1)
-            })
-            .OrderBy(group => group.Key.Month)
-            .ThenBy(group => Array.IndexOf(RegionNames, group.Key.Region))
-            .Select(group => new
-            {
-                region = group.Key.Region,
-                month = group.Key.Month.ToString("yyyy-MM"),
-                orderQuantity = group.Sum(item => (long)item.Quantity),
-                salesAmount = group.Sum(item => (long)item.Quantity * item.UnitPrice),
-                orderCount = group.Select(item => item.OrderId).Distinct().LongCount()
-            })
+            .Select(item => item.OrderedAt)
             .ToList();
 
-        var unclassifiedLocations = classifiedItems
-            .Where(item => item.Region is null)
-            .GroupBy(item => item.Location)
-            .OrderByDescending(group => group.Sum(item => item.Quantity))
-            .Select(group => new
-            {
-                location = group.Key,
-                orderQuantity = group.Sum(item => (long)item.Quantity),
-                salesAmount = group.Sum(item => (long)item.Quantity * item.UnitPrice),
-                orderCount = group.Select(item => item.OrderId).Distinct().LongCount()
-            })
-            .ToList();
+        var periodStart = classifiedOrderDates.Count > 0
+            ? classifiedOrderDates.Min().ToString("yyyy-MM")
+            : null;
+        var periodEnd = classifiedOrderDates.Count > 0
+            ? classifiedOrderDates.Max().ToString("yyyy-MM")
+            : null;
 
         return Ok(new
         {
             regions = regionStats,
-            monthlyTrend,
-            unclassifiedLocations
+            periodStart,
+            periodEnd
         });
+
     }
 
     private static string? GetRegionFromLocation(string? location)
