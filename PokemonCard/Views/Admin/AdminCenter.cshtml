@@ -77,12 +77,12 @@
                 <div class="card border-0 border-start border-4 border-warning rounded-4 shadow-sm h-100">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-start justify-content-between mb-3">
-                            <div class="text-secondary small">本月平台收入</div>
+                            <div class="text-secondary small">總平台收入</div>
                             <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-warning-subtle text-warning-emphasis p-3 fs-5">
                                 <i class="bi bi-cash-coin"></i>
                             </span>
                         </div>
-                        <div class="fs-3 fw-bold">NT$ @Model.MonthlyPlatformRevenue.ToString("N0")</div>
+                        <div class="fs-3 fw-bold">NT$ @Model.TotalPlatformRevenue.ToString("N0")</div>
                         <div class="small fw-semibold text-warning-emphasis mt-2">查看收入分析 <i class="bi bi-arrow-right"></i></div>
                     </div>
                 </div>
@@ -97,7 +97,7 @@
                     <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-3 fs-5"><i class="bi bi-bar-chart-line"></i></span>
                     <div>
                         <h2 id="platformAnalysisTitle" class="h5 fw-bold mb-1">平台營運分析</h2>
-                        <p class="text-secondary mb-0">@(isMemberAnalysis ? "依會員註冊日期分析會員成長。" : "依對帳建立日期統計平台抽成收入。")</p>
+                        <p class="text-secondary mb-0">@(isMemberAnalysis ? "依會員註冊日期分析會員成長。" : "依撥款／入帳日期統計平台抽成收入。")</p>
                     </div>
                 </div>
                 <div class="btn-group btn-group-sm" role="group" aria-label="圖表類型">

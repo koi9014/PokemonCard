@@ -87,19 +87,21 @@ namespace PokemonCard.Controllers
 
             var revenueRecords = await _context.MoneyReconciliations
                 .AsNoTracking()
-                .Where(reconciliation => reconciliation.CreatedAt >= revenuePeriodStart
-                    && reconciliation.CreatedAt < revenuePeriodEnd)
+                .Where(reconciliation => reconciliation.RemitDate.HasValue
+                    && reconciliation.RemitDate >= revenuePeriodStart
+                    && reconciliation.RemitDate < revenuePeriodEnd)
                 .Select(reconciliation => new
                 {
-                    reconciliation.CreatedAt,
+                    reconciliation.RemitDate,
                     reconciliation.PlatformRevenue
                 })
                 .ToListAsync();
 
             var previousPeriodRevenue = await _context.MoneyReconciliations
                 .AsNoTracking()
-                .Where(reconciliation => reconciliation.CreatedAt >= previousPeriodStart
-                    && reconciliation.CreatedAt < previousPeriodEnd)
+                .Where(reconciliation => reconciliation.RemitDate.HasValue
+                    && reconciliation.RemitDate >= previousPeriodStart
+                    && reconciliation.RemitDate < previousPeriodEnd)
                 .SumAsync(reconciliation => (long?)reconciliation.PlatformRevenue) ?? 0;
 
             var revenueChartLabels = new List<string>();
@@ -114,8 +116,8 @@ namespace PokemonCard.Controllers
                 {
                     revenueChartLabels.Add(cursor.ToString("yyyy/MM"));
                     revenueChartValues.Add(revenueRecords
-                        .Where(record => record.CreatedAt.Year == cursor.Year
-                            && record.CreatedAt.Month == cursor.Month)
+                        .Where(record => record.RemitDate!.Value.Year == cursor.Year
+                            && record.RemitDate.Value.Month == cursor.Month)
                         .Sum(record => (long)record.PlatformRevenue));
                 }
             }
@@ -127,7 +129,7 @@ namespace PokemonCard.Controllers
                 {
                     revenueChartLabels.Add(cursor.ToString("MM/dd"));
                     revenueChartValues.Add(revenueRecords
-                        .Where(record => record.CreatedAt.Date == cursor)
+                        .Where(record => record.RemitDate!.Value.Date == cursor)
                         .Sum(record => (long)record.PlatformRevenue));
                 }
             }
@@ -249,10 +251,9 @@ namespace PokemonCard.Controllers
                     .Select(block => block.UserId)
                     .Distinct()
                     .CountAsync(),
-                MonthlyPlatformRevenue = await _context.MoneyReconciliations
+                TotalPlatformRevenue = await _context.MoneyReconciliations
                     .AsNoTracking()
-                    .Where(reconciliation => reconciliation.CreatedAt >= monthStart
-                        && reconciliation.CreatedAt < nextMonthStart)
+                    .Where(reconciliation => reconciliation.RemitDate.HasValue)
                     .SumAsync(reconciliation => (long?)reconciliation.PlatformRevenue) ?? 0,
                 RevenueMonth = monthStart,
                 AnalysisType = normalizedAnalysisType,
@@ -766,7 +767,7 @@ namespace PokemonCard.Models
 
         public int BlacklistedUserCount { get; init; }
 
-        public long MonthlyPlatformRevenue { get; init; }
+        public long TotalPlatformRevenue { get; init; }
 
         public DateTime RevenueMonth { get; init; }
 
