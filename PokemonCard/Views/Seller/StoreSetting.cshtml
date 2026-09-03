@@ -1,13 +1,13 @@
 @model PokemonCard.Controllers.StoreSettingInput
 @{
     Layout = "~/Views/MyAccount/MemberLayout.cshtml";
-    ViewData["Title"] = "修改商店資料";
+    ViewData["Title"] = Model.IsCreate ? "建立賣場" : "修改賣場資料";
 }
 
 <div class="mx-auto w-full max-w-2xl rounded-xl border border-[#e2bebb] bg-white p-6 shadow-sm">
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-[#0d1e25]">修改商店資料</h1>
-        <p class="mt-1 text-sm text-[#5a413f]">更新賣場公開顯示的頭像、名稱與介紹。</p>
+        <h1 class="text-2xl font-bold text-[#0d1e25]">@(Model.IsCreate ? "建立賣場" : "修改賣場資料")</h1>
+        <p class="mt-1 text-sm text-[#5a413f]">@(Model.IsCreate ? "填寫資料來建立你的賣場。" : "更新賣場名稱、介紹與頭像。")</p>
     </div>
 
     @if (TempData["StoreSettingSuccess"] is string successMessage)
@@ -21,31 +21,22 @@
 
     <form asp-action="StoreSetting" method="post" enctype="multipart/form-data" class="space-y-6">
         @Html.AntiForgeryToken()
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div asp-validation-summary="ModelOnly" class="rounded-lg bg-red-50 p-4 text-sm text-red-700"></div>
-        }
+        <input asp-for="IsCreate" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="rounded-lg bg-red-50 p-4 text-sm text-red-700"></div>
 
         <section>
-            <label class="mb-2 block text-sm font-bold text-[#0d1e25]">賣家大頭貼</label>
+            <label class="mb-2 block text-sm font-bold text-[#0d1e25]">賣場頭像</label>
             <div class="flex flex-wrap items-center gap-4">
                 <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-[#e2bebb] bg-[#f4faff]">
-                    @if (!string.IsNullOrWhiteSpace(Model.AvatarUrl))
-                    {
-                        <img id="avatar-preview" src="@Model.AvatarUrl" alt="賣家大頭貼" class="h-full w-full object-cover" />
-                    }
-                    else
-                    {
-                        <img id="avatar-preview" alt="賣家大頭貼預覽" class="hidden h-full w-full object-cover" />
-                        <span id="avatar-placeholder" class="text-3xl text-[#5a413f]">店</span>
-                    }
+                    <img id="avatar-preview" src="@Model.AvatarUrl" alt="賣場頭像預覽" class="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "hidden " : "")h-full w-full object-cover" />
+                    <span id="avatar-placeholder" class="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "" : "hidden ")text-sm text-[#5a413f]">尚無圖片</span>
                 </div>
                 <div>
                     <label class="inline-flex cursor-pointer items-center rounded-lg border border-[#42a5f5] px-4 py-2 text-sm font-bold text-[#00609a] hover:bg-[#eef5f9]">
-                        上傳新頭像
+                        選擇圖片
                         <input asp-for="Avatar" id="avatar" accept="image/jpeg,image/png,image/webp" class="hidden" />
                     </label>
-                    <p class="mt-2 text-xs text-[#5a413f]">JPG、PNG、WEBP，檔案最大 5 MB。</p>
+                    <p class="mt-2 text-xs text-[#5a413f]">支援 JPG、PNG、WEBP，最大 5 MB。</p>
                     <span asp-validation-for="Avatar" class="mt-1 block text-sm text-red-700"></span>
                 </div>
             </div>
@@ -59,14 +50,14 @@
 
         <section>
             <label asp-for="StoreDescription" class="mb-2 block text-sm font-bold text-[#0d1e25]">賣場介紹</label>
-            <textarea asp-for="StoreDescription" maxlength="100" rows="4" class="w-full resize-none rounded-lg border border-[#e2bebb] px-4 py-3 outline-none focus:border-[#42a5f5]" placeholder="介紹你的賣場特色與商品..."></textarea>
-            <p class="mt-1 text-xs text-[#5a413f]">最多 100 字。</p>
+            <textarea asp-for="StoreDescription" maxlength="100" rows="4" class="w-full resize-none rounded-lg border border-[#e2bebb] px-4 py-3 outline-none focus:border-[#42a5f5]" placeholder="簡單介紹你的賣場"></textarea>
+            <p class="mt-1 text-xs text-[#5a413f]">最多 100 個字。</p>
             <span asp-validation-for="StoreDescription" class="mt-1 block text-sm text-red-700"></span>
         </section>
 
         <div class="flex justify-end gap-3 border-t border-[#e2bebb] pt-5">
-            <a asp-action="MyStore" class="rounded-lg border border-[#e2bebb] px-5 py-2.5 font-bold text-[#5a413f]">取消</a>
-            <button type="submit" class="rounded-lg bg-[#ef5350] px-5 py-2.5 font-bold text-white hover:bg-[#e53935]">儲存變更</button>
+            <a asp-controller="MyAccount" asp-action="Order" class="rounded-lg border border-[#e2bebb] px-5 py-2.5 font-bold text-[#5a413f]">返回</a>
+            <button type="submit" class="rounded-lg bg-[#ef5350] px-5 py-2.5 font-bold text-white hover:bg-[#e53935]">@(Model.IsCreate ? "建立賣場" : "儲存變更")</button>
         </div>
     </form>
 </div>
@@ -76,9 +67,8 @@
         const file = event.target.files?.[0];
         if (!file) return;
         const preview = document.getElementById('avatar-preview');
-        const placeholder = document.getElementById('avatar-placeholder');
         preview.src = URL.createObjectURL(file);
         preview.classList.remove('hidden');
-        placeholder?.classList.add('hidden');
+        document.getElementById('avatar-placeholder')?.classList.add('hidden');
     });
 </script>

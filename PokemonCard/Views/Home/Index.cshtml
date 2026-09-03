@@ -5,6 +5,7 @@
     var productTypes = new[] { "絨毛娃娃", "模型與公仔", "集換式卡牌", "生活與家居", "服飾與配件", "文具與辦公用品", "電玩周邊", "3C配件", "其他" };
     var activeFilterClass = "bg-primary text-on-primary shadow-sm";
     var filterClass = "bg-surface-container hover:bg-surface-container-high text-on-surface-variant";
+    var showFavorites = string.Equals(Context.Request.Query["favorites"], "true", StringComparison.OrdinalIgnoreCase);
 }
 
         <title>PiCartChu 日本寶可夢代購平台</title>
@@ -42,7 +43,21 @@
         <!-- 內容容器 -->
         <div class="mx-auto flex w-full flex-col gap-8">
 
+            @if (showFavorites)
+            {
+                <section class="w-full">
+                    <div class="flex items-center gap-3">
+                        <a asp-controller="Home" asp-action="Index" class="flex h-10 w-10 items-center justify-center rounded-lg text-[#0d1e25] hover:bg-white" aria-label="返回首頁">
+                            <span class="material-symbols-outlined">arrow_back</span>
+                        </a>
+                        <h1 class="text-2xl font-extrabold text-[#0d1e25]">我的收藏</h1>
+                    </div>
+                </section>
+            }
+
             <!-- 1. Hero Banner 區塊 -->
+            @if (!showFavorites)
+            {
             <section class="w-full">
                 <div class="relative w-full h-[300px] md:h-[400px] lg:h-[450px] rounded-xl overflow-hidden shadow-md group">
                     <div class="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style="background-image: url(../img/banner.png)"></div>
@@ -60,8 +75,11 @@
                     </div>
                 </div>
             </section>
+            }
 
             <!-- 2. 篩選器區塊 (地區、種類) -->
+            @if (!showFavorites)
+            {
             <section class="w-full">
                 <div class="bg-white rounded-xl shadow-sm border border-[#e2bebb]/50 p-5 md:p-6">
                     <div class="flex flex-col gap-3">
@@ -94,12 +112,13 @@
                         </div>
                         <div class="w-full h-px bg-surface-variant/50"></div>
             </section>
+            }
 
 
 
             <!-- 3. 精選熱銷商品網格區塊 -->
             <section class="w-full">
-                <div class="flex items-end justify-between mb-6">
+                <div class="@(showFavorites ? "hidden" : "flex") items-end justify-between mb-6">
                     <div>
                         <h3 class="text-2xl font-bold text-[#0d1e25] flex items-center gap-2">
                             精選熱銷商品
@@ -115,16 +134,17 @@
                 </div>
 
                 <!-- 商品卡片列表 -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @if (pageModel.Products.Count == 0)
+                <div id="favorite-empty" class="hidden rounded-xl bg-white p-10 text-center text-[#5a413f]">目前還沒有收藏商品。</div>
+                <div id="product-grid" data-favorites-only="@showFavorites.ToString().ToLowerInvariant()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @if (pageModel.Products.Count == 0 && !showFavorites)
                     {
                         <p class="col-span-full rounded-xl bg-white p-10 text-center text-[#5a413f]">目前沒有可販售的商品。</p>
                     }
                     @foreach (var product in pageModel.Products)
                     {
-                        <div class="cursor-pointer bg-white border border-[#e2bebb]/30 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group" onclick="window.location.href='@Url.Action("Details", "Product", new { id = product.ProductId })'">
+                        <div class="product-card cursor-pointer bg-white border border-[#e2bebb]/30 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group" data-product-id="@product.ProductId" onclick="window.location.href='@Url.Action("Details", "Product", new { id = product.ProductId })'">
                             <div class="relative w-full aspect-square bg-[#f4faff] p-4 flex items-center justify-center overflow-hidden">
-                                <button class="absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#5a413f] hover:text-[#EF5350] shadow-sm transition-all" type="button" onclick="event.stopPropagation()">
+                                <button class="favorite-button absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#5a413f] hover:text-[#EF5350] shadow-sm transition-all" type="button" data-product-id="@product.ProductId" aria-label="加入收藏" onclick="event.stopPropagation(); toggleFavorite(@product.ProductId)">
                                     <span class="material-symbols-outlined text-[18px]">favorite</span>
                                 </button>
                                 @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
@@ -149,7 +169,7 @@
                                             <span class="text-sm font-bold text-[#5a413f]">價格請洽詢</span>
                                         }
                                     </div>
-                                    <button class="w-10 h-10 rounded-lg bg-[#42A5F5]/10 text-[#42A5F5] hover:bg-[#42A5F5] hover:text-white transition-all flex items-center justify-center shadow-sm" type="button" aria-label="加入購物車" onclick="event.stopPropagation()">
+                                    <button class="w-10 h-10 rounded-lg bg-[#42A5F5]/10 text-[#42A5F5] hover:bg-[#42A5F5] hover:text-white transition-all flex items-center justify-center shadow-sm disabled:cursor-not-allowed disabled:opacity-40" type="button" aria-label="加入購物車" @(product.AvailableSpecCount == 0 ? "disabled" : null) onclick="event.stopPropagation(); addHomeProductToCart(@product.ProductId, @(product.DefaultSpecificationId?.ToString() ?? "null"), @product.AvailableSpecCount)">
                                         <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
                                     </button>
                                 </div>
@@ -164,3 +184,56 @@
     </div>
    
 </div>
+
+<script>
+    const favoriteStorageKey = 'picartchu-favorite-product-ids';
+
+    function getFavoriteIds() {
+        try {
+            const value = JSON.parse(localStorage.getItem(favoriteStorageKey) || '[]');
+            return Array.isArray(value) ? value.map(Number).filter(Number.isInteger) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function refreshFavoriteCards() {
+        const favoriteIds = new Set(getFavoriteIds());
+        const grid = document.getElementById('product-grid');
+        const favoritesOnly = grid?.dataset.favoritesOnly === 'true';
+        let visibleCount = 0;
+
+        document.querySelectorAll('.product-card').forEach(card => {
+            const productId = Number(card.dataset.productId);
+            const isFavorite = favoriteIds.has(productId);
+            card.querySelector('.favorite-button')?.classList.toggle('text-[#EF5350]', isFavorite);
+            const icon = card.querySelector('.favorite-button .material-symbols-outlined');
+            if (icon) icon.style.fontVariationSettings = `'FILL' ${isFavorite ? 1 : 0}`;
+            const button = card.querySelector('.favorite-button');
+            if (button) button.setAttribute('aria-label', isFavorite ? '取消收藏' : '加入收藏');
+            card.classList.toggle('hidden', favoritesOnly && !isFavorite);
+            if (!favoritesOnly || isFavorite) visibleCount++;
+        });
+
+        document.getElementById('favorite-empty')?.classList.toggle('hidden', !favoritesOnly || visibleCount > 0);
+    }
+
+    function toggleFavorite(productId) {
+        const favoriteIds = new Set(getFavoriteIds());
+        favoriteIds.has(productId) ? favoriteIds.delete(productId) : favoriteIds.add(productId);
+        localStorage.setItem(favoriteStorageKey, JSON.stringify([...favoriteIds]));
+        refreshFavoriteCards();
+    }
+
+    function addHomeProductToCart(productId, specificationId, availableSpecCount) {
+        if (availableSpecCount === 1 && specificationId) {
+            addToCart(productId, specificationId, 1);
+            return;
+        }
+        if (availableSpecCount > 1) {
+            window.location.href = '@Url.Action("Details", "Product")/' + productId;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', refreshFavoriteCards);
+</script>
