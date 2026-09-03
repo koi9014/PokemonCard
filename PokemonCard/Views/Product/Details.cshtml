@@ -483,29 +483,22 @@
     <div class="cart-toast-header">
 
         <div class="cart-success-icon">
-
             <span class="material-symbols-outlined">
                 check
             </span>
-
         </div>
 
         <div class="cart-success-text">
-
             已加入購物車
-
         </div>
 
         <button type="button"
                 class="cart-toast-close"
                 onclick="closeCartToast()">
-
             ×
-
         </button>
 
     </div>
-
 
     <div class="cart-toast-body">
 
@@ -514,35 +507,26 @@
              alt="商品圖片"
              class="cart-toast-image">
 
-
         <div class="cart-toast-info">
 
             <div id="cartToastProductName"
                  class="cart-toast-product-name">
-
                 商品名稱
-
             </div>
 
             <div id="cartToastSpecification"
                  class="cart-toast-specification">
-
                 規格
-
             </div>
 
             <div class="cart-toast-bottom">
 
                 <span id="cartToastPrice"
                       class="cart-toast-price">
-
                     NT$ 0
-
                 </span>
 
-                <span>
-                    ×
-                </span>
+                <span>×</span>
 
                 <span id="cartToastQuantity">
                     1
@@ -554,24 +538,18 @@
 
     </div>
 
-
     <div class="cart-toast-footer">
 
         <button type="button"
                 class="btn btn-outline-secondary"
                 onclick="closeCartToast()">
-
             繼續購物
-
         </button>
-
 
         <a asp-controller="Cart"
            asp-action="Index"
            class="btn btn-warning">
-
             查看購物車
-
         </a>
 
     </div>
@@ -579,9 +557,12 @@
 </div>
 
 
+
 <!-- =====================================
      JavaScript
 ====================================== -->
+
+
 <script>
 
     // ==========================================
@@ -1082,82 +1063,83 @@
 
 
     // ==========================================
-    // 顯示購物車小視窗
+    // 顯示加入購物車成功視窗
     // ==========================================
 
     function showCartToast() {
 
         const toast =
-            document.getElementById(
-                "cartToast"
-            );
-
+            document.getElementById("cartToast");
 
         if (!toast) {
             return;
         }
+        toast.classList.add("show");
 
 
-        // ----------------------------------
+
+
+        // ==========================================
         // 商品名稱
-        // ----------------------------------
+        // ==========================================
 
-const productName =
-    document.getElementById("cartToastProductName");
+        const productName =
+            document.getElementById("cartToastProductName");
 
-if (productName) {
-    productName.textContent =
-        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProductName));
-}
+        if (productName) {
+
+            productName.textContent =
+                @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                Model.ProductName
+                )
+                );
+
+        }
 
 
-        // ----------------------------------
+        // ==========================================
         // 商品圖片
-        // ----------------------------------
+        // ==========================================
 
         const image =
             document.querySelector(
                 "#productCarousel .carousel-item.active img"
             );
 
-
         const toastImage =
-            document.getElementById(
-                "cartToastImage"
-            );
-
+            document.getElementById("cartToastImage");
 
         if (image && toastImage) {
 
-            toastImage.src =
-                image.src;
+            toastImage.src = image.src;
 
         }
 
 
-        // ----------------------------------
-        // 規格
-        // ----------------------------------
+        // ==========================================
+        // 目前選中的規格
+        // ==========================================
 
         const activeOption =
             document.querySelector(
                 ".product-option.active"
             );
 
-
         const specification =
             document.getElementById(
                 "cartToastSpecification"
             );
 
-
-        if (activeOption && specification) {
+        if (
+            activeOption &&
+            specification
+        ) {
 
             const optionName =
                 activeOption.querySelector(
                     ".option-name"
                 );
-
 
             if (optionName) {
 
@@ -1170,23 +1152,24 @@ if (productName) {
         }
 
 
-        // ----------------------------------
-        // 價格
-        // ----------------------------------
+        // ==========================================
+        // 商品價格
+        // ==========================================
 
         const price =
             document.getElementById(
                 "productPrice"
             );
 
-
         const toastPrice =
             document.getElementById(
                 "cartToastPrice"
             );
 
-
-        if (price && toastPrice) {
+        if (
+            price &&
+            toastPrice
+        ) {
 
             toastPrice.textContent =
                 price.textContent;
@@ -1194,23 +1177,24 @@ if (productName) {
         }
 
 
-        // ----------------------------------
-        // 數量
-        // ----------------------------------
+        // ==========================================
+        // 購買數量
+        // ==========================================
 
         const quantity =
             document.getElementById(
                 "quantity"
             );
 
-
         const toastQuantity =
             document.getElementById(
                 "cartToastQuantity"
             );
 
-
-        if (quantity && toastQuantity) {
+        if (
+            quantity &&
+            toastQuantity
+        ) {
 
             toastQuantity.textContent =
                 quantity.value;
@@ -1218,53 +1202,55 @@ if (productName) {
         }
 
 
-        // ----------------------------------
-        // 顯示
-        // ----------------------------------
+        // ==========================================
+        // 顯示彈窗
+        // ==========================================
 
         toast.classList.add("show");
 
 
-        // ----------------------------------
-        // 5 秒後自動關閉
-        // ----------------------------------
+        // ==========================================
+        // 清除之前的計時器
+        // ==========================================
 
         clearTimeout(
             window.cartToastTimer
         );
 
 
+        // ==========================================
+        // 5 秒後自動關閉
+        // ==========================================
+
         window.cartToastTimer =
-            setTimeout(function () {
+            setTimeout(
+                function() {
 
-                closeCartToast();
+                    closeCartToast();
 
-            }, 5000);
+                },
+                5000
+            );
 
     }
 
 
     // ==========================================
-    // 關閉購物車小視窗
+    // 關閉購物車成功視窗
     // ==========================================
 
     function closeCartToast() {
 
-        const toast =
-            document.getElementById(
-                "cartToast"
-            );
+        const toast = document.getElementById("cartToast");
 
-
-        if (toast) {
-
-            toast.classList.remove(
-                "show"
-            );
-
+        if (!toast) {
+            return;
         }
 
+        toast.classList.remove("show");
     }
+
+
 
 </script>
 
@@ -1433,10 +1419,166 @@ if (productName) {
         addToCart(
             productId,
             specificationId,
-            quantity
+            quantity,
+            function() {
+                showCartToast();
+            }
         );
 
     }
 
 </script>
 
+<style>
+
+    /* ==========================================
+           加入購物車成功 Toast
+           預設完全不顯示
+        ========================================== */
+
+    #cartToast {
+        position: fixed !important;
+        top: 30px !important;
+        right: 30px !important;
+        width: 380px;
+        max-width: calc(100vw - 30px);
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+        z-index: 99999 !important;
+        /* ⭐ 進入頁面時完全隱藏 */
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        transform: translateX(120%);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+
+        /* ==========================================
+           ⭐ 只有 .show 才顯示
+        ========================================== */
+
+        #cartToast.show {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            transform: translateX(0);
+        }
+
+
+    /* ==========================================
+           Header
+        ========================================== */
+
+    .cart-toast-header {
+        display: flex;
+        align-items: center;
+        padding: 18px 20px;
+        border-bottom: 1px solid #eee;
+    }
+
+
+    .cart-success-icon {
+        width: 34px;
+        height: 34px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .cart-success-text {
+        flex: 1;
+        font-weight: 700;
+        font-size: 17px;
+        color: #333;
+    }
+
+
+    .cart-toast-close {
+        border: none;
+        background: transparent;
+        font-size: 26px;
+        color: #777;
+        cursor: pointer;
+    }
+
+
+    /* ==========================================
+           Body
+        ========================================== */
+
+    .cart-toast-body {
+        display: flex;
+        padding: 18px 20px;
+    }
+
+
+    .cart-toast-image {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 10px;
+        border: 1px solid #eee;
+        margin-right: 15px;
+    }
+
+
+    .cart-toast-info {
+        flex: 1;
+    }
+
+
+    .cart-toast-product-name {
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #333;
+    }
+
+
+    .cart-toast-specification {
+        color: #777;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+
+    .cart-toast-bottom {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 14px;
+    }
+
+
+    .cart-toast-price {
+        color: #dc3545;
+        font-weight: 700;
+    }
+
+
+    /* ==========================================
+           Footer
+        ========================================== */
+
+    .cart-toast-footer {
+        display: flex;
+        gap: 10px;
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+    }
+
+
+        .cart-toast-footer button,
+        .cart-toast-footer a {
+            flex: 1;
+        }
+
+
+
+</style>
