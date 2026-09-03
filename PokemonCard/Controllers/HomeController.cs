@@ -41,6 +41,12 @@ namespace PokemonCard. Controllers
                         .Select(spec => (int?)spec.SpecsPrice)
                         .Min(),
                     SpecCount = product.ProductSpecs.Count(),
+                    AvailableSpecCount = product.ProductSpecs.Count(spec => spec.Stock > 0),
+                    DefaultSpecificationId = product.ProductSpecs
+                        .Where(spec => spec.Stock > 0)
+                        .OrderBy(spec => spec.SpecsPrice)
+                        .Select(spec => (int?)spec.SpecificationId)
+                        .FirstOrDefault(),
                     ImageUrl = product.ProductImages
                         .OrderBy(image => image.ImageOrder)
                         .Select(image => image.ImageUrl)
@@ -80,6 +86,8 @@ namespace PokemonCard. Controllers
         public string? Location { get; set; }
         public int? LowestPrice { get; set; }
         public int SpecCount { get; set; }
+        public int AvailableSpecCount { get; set; }
+        public int? DefaultSpecificationId { get; set; }
         public string? ImageUrl { get; set; }
     }
 }

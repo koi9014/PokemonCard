@@ -29,6 +29,12 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             .FirstOrDefaultAsync();
     }
 
+    private int? GetCurrentUserId()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(userIdText, out var userId) ? userId : null;
+    }
+
     private static bool IsOrderActionable(string status) => status is not ("SHIPPED" or "COMPLETED" or "CANCELLED");
 
     private static string GetRemitStatusText(string? remitResult, string? remitStatus)
@@ -343,6 +349,147 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
     [HttpGet]
     public async Task<IActionResult> StoreSetting()
     {
+        var userId = GetCurrentUserId();
+        if (!userId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var seller = await context.Sellers
+            .AsNoTracking()
+            .Include(item => item.User)
+            .SingleOrDefaultAsync(item => item.UserId == userId.Value);
+
+        if (seller is not null)
+        {
+            return View(new StoreSettingInput
+            {
+                StoreName = seller.StoreName,
+                StoreDescription = seller.StoreDescription,
+                AvatarUrl = seller.User.Avatar
+            });
+        }
+
+        var approvedUser = await context.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.UserId == userId.Value
+                && item.SellerVerificationStatus == "APPROVED");
+        if (approvedUser is null) return Forbid();
+
+        ViewData["IsSeller"] = false;
+        return View(new StoreSettingInput
+        {
+            IsCreate = true,
+            AvatarUrl = approvedUser.Avatar
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> StoreSetting(StoreSettingInput input)
+    {
+        var userId = GetCurrentUserId();
+        if (!userId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var seller = await context.Sellers
+            .Include(item => item.User)
+            .SingleOrDefaultAsync(item => item.UserId == userId.Value);
+        var user = seller?.User ?? await context.Users
+            .SingleOrDefaultAsync(item => item.UserId == userId.Value);
+        if (user is null) return NotFound();
+
+        var isCreate = seller is null;
+        if (isCreate && user.SellerVerificationStatus != "APPROVED") return Forbid();
+
+        input.IsCreate = isCreate;
+        input.AvatarUrl = user.Avatar;
+        var storeName = input.StoreName?.Trim();
+        var storeDescription = input.StoreDescription?.Trim();
+        if (string.IsNullOrWhiteSpace(storeName))
+            ModelState.AddModelError(nameof(input.StoreName), "請輸入賣場名稱。");
+        if (storeName?.Length > 50)
+            ModelState.AddModelError(nameof(input.StoreName), "賣場名稱最多 50 個字。");
+        if (storeDescription?.Length > 100)
+            ModelState.AddModelError(nameof(input.StoreDescription), "賣場介紹最多 100 個字。");
+        if (input.Avatar is { Length: > 0 }
+            && (input.Avatar.Length > 5 * 1024 * 1024
+                || !new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(Path.GetExtension(input.Avatar.FileName).ToLowerInvariant())))
+            ModelState.AddModelError(nameof(input.Avatar), "請上傳 JPG、PNG 或 WEBP，檔案不得超過 5 MB。");
+
+        if (!ModelState.IsValid)
+        {
+            ViewData["IsSeller"] = !isCreate;
+            return View(input);
+        }
+
+        var now = DateTime.Now;
+        var changed = isCreate;
+        if (isCreate)
+        {
+            var fullName = await context.SellerApplications
+                .AsNoTracking()
+                .Where(application => application.UserId == userId.Value
+                    && application.SellerStatus == "APPROVED")
+                .OrderByDescending(application => application.ApplyAt)
+                .Select(application => application.RealName)
+                .FirstOrDefaultAsync();
+            if (string.IsNullOrWhiteSpace(fullName)) return Forbid();
+
+            seller = new Seller
+            {
+                UserId = userId.Value,
+                FullName = fullName,
+                StoreName = storeName!,
+                StoreDescription = storeDescription,
+                StoreStatus = "ACTIVE",
+                StoreCreatedAt = now,
+                StoreUpdatedAt = now,
+                User = user
+            };
+            context.Sellers.Add(seller);
+        }
+        else
+        {
+            if (!string.Equals(seller!.StoreName, storeName, StringComparison.Ordinal))
+            {
+                seller.StoreName = storeName!;
+                changed = true;
+            }
+            if (!string.Equals(seller.StoreDescription, storeDescription, StringComparison.Ordinal))
+            {
+                seller.StoreDescription = storeDescription;
+                changed = true;
+            }
+        }
+
+        if (input.Avatar is { Length: > 0 })
+        {
+            var extension = Path.GetExtension(input.Avatar.FileName).ToLowerInvariant();
+            var fileName = $"seller_{userId.Value}_{Guid.NewGuid():N}{extension}";
+            var directory = Path.Combine(environment.WebRootPath, "images", "avatar");
+            Directory.CreateDirectory(directory);
+            var filePath = Path.Combine(directory, fileName);
+            await using var stream = System.IO.File.Create(filePath);
+            await input.Avatar.CopyToAsync(stream);
+            user.Avatar = $"/images/avatar/{fileName}";
+            changed = true;
+        }
+
+        if (changed)
+        {
+            seller!.StoreUpdatedAt = now;
+            user.UserUpdatedAt = now;
+            await context.SaveChangesAsync();
+            TempData["StoreSettingSuccess"] = isCreate ? "賣場已建立。" : "賣場資料已更新。";
+        }
+        else
+        {
+            TempData["StoreSettingInfo"] = "沒有需要更新的資料。";
+        }
+
+        return RedirectToAction(nameof(StoreSetting));
+    }
+
+    [NonAction]
+    public async Task<IActionResult> StoreSettingLegacyGet()
+    {
         var sellerId = await GetCurrentSellerIdAsync();
         if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
 
@@ -360,9 +507,8 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         });
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> StoreSetting(StoreSettingInput input)
+    [NonAction]
+    public async Task<IActionResult> StoreSettingLegacyPost(StoreSettingInput input)
     {
         var sellerId = await GetCurrentSellerIdAsync();
         if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
@@ -848,10 +994,9 @@ public class SellerStoreReviewItem
 
 public class StoreSettingInput
 {
+    public bool IsCreate { get; set; }
     public string? StoreName { get; set; }
     public string? StoreDescription { get; set; }
     public IFormFile? Avatar { get; set; }
     public string? AvatarUrl { get; set; }
 }
-
-

@@ -30,6 +30,8 @@ namespace PokemonCard. Controllers
             // 判斷是不是賣家
             bool isSeller = _context. Sellers
                 . Any(s => s. UserId == userId);
+            bool canCreateStore = !isSeller && _context.Users
+                .Any(user => user.UserId == userId && user.SellerVerificationStatus == "APPROVED");
 
             // 查詢目前使用者的訂單
             var orders = _context. Orders
@@ -46,6 +48,7 @@ namespace PokemonCard. Controllers
             {
                 UserId = userId,
                 IsSeller = isSeller,
+                CanCreateStore = canCreateStore,
                 Orders = orders
             };
 
@@ -63,6 +66,15 @@ namespace PokemonCard. Controllers
             }
 
             var userId = int. Parse(userIdString);
+
+            var memberState = await _context.Users
+                .Where(user => user.UserId == userId)
+                .Select(user => new
+                {
+                    IsSeller = user.Seller != null,
+                    CanCreateStore = user.Seller == null && user.SellerVerificationStatus == "APPROVED"
+                })
+                .SingleAsync();
 
             var ordersQuery = _context. Orders
                 . Include(o => o. Seller)
@@ -83,6 +95,9 @@ namespace PokemonCard. Controllers
 
             var viewModel = new MemberCenterViewModel
             {
+                UserId = userId,
+                IsSeller = memberState.IsSeller,
+                CanCreateStore = memberState.CanCreateStore,
                 Orders = orders
             };
 
