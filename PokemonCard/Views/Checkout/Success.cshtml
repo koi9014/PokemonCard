@@ -33,25 +33,25 @@
                 <span>訂單狀態</span>
 
                 <strong class="status">
-                    @switch(Model.OrderStatus)
+                    @switch(Model.OrderStatus?.ToUpperInvariant())
                     {
-                        case "Pending":
+                        case "PENDING":
                             <span>待付款</span>
                             break;
 
-                        case "Paid":
+                        case "PAID":
                             <span>已付款</span>
                             break;
 
-                        case "Processing":
+                        case "PROCESSING":
                             <span>待出貨</span>
                             break;
 
-                        case "Shipped":
+                        case "SHIPPED":
                             <span>運送中</span>
                             break;
 
-                        case "Completed":
+                        case "COMPLETED":
                             <span>已完成</span>
                             break;
 

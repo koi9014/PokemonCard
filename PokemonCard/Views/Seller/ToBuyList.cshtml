@@ -1,0 +1,108 @@
+@model PokemonCard.Controllers.ToBuyListViewModel
+@{
+    Layout = "~/Views/MyAccount/MemberLayout.cshtml";
+    ViewData["Title"] = "待採購清單";
+}
+
+<div class="rounded-xl border border-[#e2bebb] bg-white p-4 shadow-sm md:p-6">
+    <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-[#0d1e25]">待採購清單</h1>
+            <p class="mt-1 text-sm text-[#5a413f]">彙總所有已付款、尚未完成採購的商品。</p>
+        </div>
+        <div class="flex gap-3 text-sm">
+            <span class="rounded-lg bg-[#eef5f9] px-4 py-2">訂單 <strong>@Model.TotalOrderCount</strong> 筆</span>
+            <span class="rounded-lg bg-[#fff4e5] px-4 py-2">待採購 <strong>@Model.TotalQuantity</strong> 件</span>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">@errorMessage</div>
+    }
+
+    @if (Model.Groups.Count == 0)
+    {
+        <div class="rounded-xl bg-[#f8fbfd] px-6 py-12 text-center text-[#5a413f]">
+            目前沒有待採購商品。
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] border-collapse text-left">
+                <thead>
+                    <tr class="border-y border-[#e2bebb] bg-[#eef5f9] text-sm text-[#5a413f]">
+                        <th class="px-4 py-3">商品</th>
+                        <th class="px-4 py-3">規格</th>
+                        <th class="px-4 py-3 text-center">相關訂單</th>
+                        <th class="px-4 py-3 text-center">待採購數量</th>
+                        <th class="px-4 py-3 text-right">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#e2bebb]/60">
+                    @foreach (var group in Model.Groups)
+                    {
+                        <tr class="hover:bg-[#f8fbfd]">
+                            <td class="px-4 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f4faff]">
+                                        @if (!string.IsNullOrWhiteSpace(group.ImageUrl))
+                                        {
+                                            <img src="@group.ImageUrl" alt="@group.ProductName" class="h-full w-full object-contain" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-[#5a413f]">無圖片</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-[#0d1e25]">@group.ProductName</div>
+                                        <div class="mt-1 text-xs text-[#5a413f]">商品編號：@group.ProductId</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-sm">
+                                <div>@(string.IsNullOrWhiteSpace(group.ProductSpec) ? "－" : group.ProductSpec)</div>
+                                @if (!string.IsNullOrWhiteSpace(group.ProductSpec2))
+                                {
+                                    <div class="mt-1 text-[#5a413f]">@group.ProductSpec2</div>
+                                }
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <div class="font-bold">@group.OrderIds.Count 筆</div>
+                                <details class="mt-1 text-xs text-[#5a413f]">
+                                    <summary class="cursor-pointer text-[#00609a]">查看訂單編號</summary>
+                                    <div class="mt-2 space-y-1">
+                                        @foreach (var orderNumber in group.OrderNumbers)
+                                        {
+                                            <div>@orderNumber</div>
+                                        }
+                                    </div>
+                                </details>
+                            </td>
+                            <td class="px-4 py-4 text-center text-2xl font-extrabold text-[#ef5350]">@group.TotalQuantity</td>
+                            <td class="px-4 py-4 text-right">
+                                <form asp-controller="Seller" asp-action="CompletePurchasing" method="post" onsubmit="return confirm('確定這組商品都已採購完成嗎？相關訂單將移至待出貨。');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="returnTo" value="ToBuyList" />
+                                    @foreach (var orderId in group.OrderIds)
+                                    {
+                                        <input type="hidden" name="selectedOrderIds" value="@orderId" />
+                                    }
+                                    <button type="submit" class="rounded-lg bg-[#42a5f5] px-4 py-2 text-sm font-bold text-white hover:bg-[#1976d2]">
+                                        確認採購完成
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

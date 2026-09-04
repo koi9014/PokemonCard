@@ -123,6 +123,7 @@ namespace PokemonCard. Controllers
 
             var order = await _context. Orders
                 . Include(o => o. Seller)
+                . Include(o => o.OrderHistories)
                 . Include(o => o. OrderItems)
                     . ThenInclude(oi => oi. Product)
                         . ThenInclude(p => p. ProductImages)
@@ -137,6 +138,61 @@ namespace PokemonCard. Controllers
             }
 
             return View(order);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmReceipt(int id)
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdString, out var userId))
+                return RedirectToAction("Login", "UserLogin");
+
+            var order = await _context.Orders
+                .Include(item => item.MoneyReconciliation)
+                .SingleOrDefaultAsync(item => item.OrderId == id && item.BuyerId == userId);
+            if (order is null) return NotFound();
+
+            if (!string.Equals(order.OrderStatus, "SHIPPED", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["OrderErrorMessage"] = "只有運送中的訂單可以確認收貨。";
+                return RedirectToAction(nameof(OrderDetail), new { id });
+            }
+
+            var now = DateTime.Now;
+            order.OrderStatus = "COMPLETED";
+            order.OrderUpdatedAt = now;
+            _context.OrderHistories.Add(new OrderHistory
+            {
+                OrderNo = order.OrderNo,
+                OrderStatus = "COMPLETED",
+                ChangeTime = now,
+                ChangeReason = "買家確認收貨",
+                ChangedByUserId = userId
+            });
+
+            if (order.MoneyReconciliation is null)
+            {
+                var platformRevenue = (int)Math.Round(order.OrderAmount * 0.05m, MidpointRounding.AwayFromZero);
+                _context.MoneyReconciliations.Add(new MoneyReconciliation
+                {
+                    OrderId = order.OrderId,
+                    OrderAmount = order.OrderAmount,
+                    PlatformRevenue = platformRevenue,
+                    SellerPayout = order.OrderAmount - platformRevenue,
+                    AdjustAmount = 0,
+                    IsManual = false,
+                    AdminId = null,
+                    CreatedAt = now,
+                    RemitStatus = "PENDING",
+                    RemitResult = null,
+                    RemitDate = null
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["OrderSuccessMessage"] = "已確認收貨，訂單已完成。";
+            return RedirectToAction(nameof(OrderDetail), new { id });
         }
 
 

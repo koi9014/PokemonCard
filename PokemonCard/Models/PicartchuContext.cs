@@ -321,6 +321,13 @@ public partial class PicartchuContext : DbContext
             entity.Property(e => e.ChangeTime)
                 .HasComment("狀態變更時間")
                 .HasColumnName("Change_Time");
+            entity.Property(e => e.ChangeReason)
+                .HasMaxLength(50)
+                .HasComment("狀態異動原因")
+                .HasColumnName("Change_Reason");
+            entity.Property(e => e.ChangedByUserId)
+                .HasComment("執行狀態異動的使用者編號")
+                .HasColumnName("Changed_By_User_ID");
             entity.Property(e => e.OrderNo)
                 .HasMaxLength(30)
                 .IsUnicode(false)

@@ -10,6 +10,26 @@
         <h3 class="fw-bold">訂單詳細資料</h3>
     </div>
 
+    @if (TempData["OrderSuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (TempData["OrderErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (string.Equals(Model.OrderStatus, "SHIPPED", StringComparison.OrdinalIgnoreCase)
+        && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.BuyerId.ToString())
+    {
+        <div class="mb-4 text-end">
+            <form asp-controller="MyAccount" asp-action="ConfirmReceipt" asp-route-id="@Model.OrderId" method="post" onsubmit="return confirm('確定已收到商品嗎？確認後訂單將完成。');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success">確認收貨</button>
+            </form>
+        </div>
+    }
+
 
     <!-- ==================== -->
     <!-- 訂單詳細資料 -->
@@ -23,6 +43,11 @@
         <!-- ==================== -->
         @{
             string status = Model.OrderStatus?.ToUpper( ) ?? "";
+            var cancellationReason = Model.OrderHistories
+                .Where(history => string.Equals(history.OrderStatus, "CANCELLED", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(history => history.ChangeTime)
+                .Select(history => history.ChangeReason)
+                .FirstOrDefault();
 
             int currentStep = status switch
             {
@@ -119,6 +144,10 @@
                     <p class="text-muted mb-0">
                         此訂單已取消，無法繼續進行後續流程。
                     </p>
+                    @if (!string.IsNullOrWhiteSpace(cancellationReason))
+                    {
+                        <p class="mt-2 mb-0"><strong>取消原因：</strong>@cancellationReason</p>
+                    }
 
                 </div>
 
@@ -697,6 +726,52 @@
 
             </div>
 
+        }
+
+        @if (User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.SellerId.ToString()
+            && (status is "PENDING" or "PAID"))
+        {
+            <div class="card-body border-top">
+                <div class="d-flex justify-content-between align-items-start gap-4">
+                    <div>
+                        <h5 class="fw-bold text-danger mb-1">取消訂單</h5>
+                        <p class="text-muted mb-0">僅限尚未完成採購的訂單，取消原因將提供買家查看。</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">取消訂單</button>
+                </div>
+            </div>
+
+            <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form asp-controller="Seller" asp-action="CancelOrder" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@Model.OrderId" />
+                            <div class="modal-header">
+                                <h2 class="modal-title fs-5 fw-bold" id="cancelOrderModalLabel">取消訂單</h2>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-muted">訂單：<strong>@Model.OrderNo</strong></p>
+                                <label for="cancelReason" class="form-label fw-bold">取消原因</label>
+                                <textarea id="cancelReason" name="cancelReason" maxlength="50" rows="3" required class="form-control" placeholder="例如：日本當地缺貨"></textarea>
+                                <div class="form-text text-end"><span id="cancelReasonCount">0</span>/50</div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">返回</button>
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('確定要取消這筆訂單嗎？');">確認取消</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                const cancelReason = document.getElementById('cancelReason');
+                cancelReason?.addEventListener('input', () => {
+                    document.getElementById('cancelReasonCount').textContent = cancelReason.value.length;
+                });
+            </script>
         }
 
     </div>

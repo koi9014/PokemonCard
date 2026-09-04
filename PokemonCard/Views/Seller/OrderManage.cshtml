@@ -52,6 +52,9 @@
             <form method="post">
                 @Html.AntiForgeryToken()
                 <div class="mb-4 flex justify-end gap-3">
+                    <button type="submit" formaction="@Url.Action("CompletePurchasing", "Seller")" class="flex items-center gap-2 rounded-lg bg-[#42a5f5] px-5 py-2 text-sm font-bold text-white">
+                        <span class="material-symbols-outlined text-[18px]">inventory_2</span>採購完成
+                    </button>
                     <button type="submit" formaction="@Url.Action("ShipOrders", "Seller")" disabled="@(!canManageOrders)" class="flex items-center gap-2 rounded-lg bg-[#126d27] px-5 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
                         <span class="material-symbols-outlined text-[18px]">local_shipping</span>執行出貨
                     </button>
@@ -82,7 +85,9 @@
                                         <td class="px-4 py-4 font-semibold">@item.OrderNo</td>
                                         <td class="px-4 py-4">@item.Username</td>
                                         <td class="px-4 py-4 text-right font-bold">NT$ @item.OrderAmount.ToString("N0")</td>
-                                        <td class="px-4 py-4 text-center"><span class="inline-flex rounded-full px-3 py-1 text-sm font-bold @StatusClass(item.OrderStatus)">@StatusText(item.OrderStatus)</span></td>
+                                        <td class="px-4 py-4 text-center">
+                                            <span class="inline-flex rounded-full px-3 py-1 text-sm font-bold @StatusClass(item.OrderStatus)">@StatusText(item.OrderStatus)</span>
+                                        </td>
                                         <td class="px-4 py-4 text-right"><a asp-controller="MyAccount" asp-action="OrderDetail" asp-route-id="@item.OrderId" class="font-semibold text-[#00609a] no-underline hover:text-[#0079c1]">詳情</a></td>
                                     </tr>
                                 }
@@ -112,4 +117,5 @@
     const selectAll = document.getElementById('select-all');
     const orderCheckboxes = document.querySelectorAll('.order-checkbox');
     selectAll?.addEventListener('change', () => orderCheckboxes.forEach(checkbox => checkbox.checked = selectAll.checked));
+
 </script>

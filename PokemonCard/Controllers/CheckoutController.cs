@@ -273,7 +273,7 @@ namespace PokemonCard. Controllers
 
                 ShipAmount = shipAmount,
 
-                OrderStatus = "Pending",
+                OrderStatus = "PAID",
 
                 ReceiverName = customerName,
 
@@ -313,6 +313,14 @@ namespace PokemonCard. Controllers
 
             // 建立 Order 與 OrderItem 關聯
             order. OrderItems. Add(orderItem);
+            order.OrderHistories.Add(new OrderHistory
+            {
+                OrderNo = orderNo,
+                OrderStatus = "PAID",
+                ChangeTime = DateTime.Now,
+                ChangeReason = "訂單成立，預扣額度成功",
+                ChangedByUserId = buyerId
+            });
 
 
 
