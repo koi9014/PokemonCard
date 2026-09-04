@@ -200,8 +200,10 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 && item.Order.OrderStatus.ToUpper() == "PAID")
             .Select(item => new
             {
+                item.OrderItemsId,
                 item.OrderId,
                 item.Order.OrderNo,
+                item.Order.OrderedAt,
                 item.ProductId,
                 item.ProductName,
                 item.ProductSpec,
@@ -233,6 +235,17 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                     ProductSpec2 = group.Key.ProductSpec2,
                     ImageUrl = group.Key.ImageUrl,
                     TotalQuantity = group.Sum(item => item.Quantity),
+                    OrderItemIds = group.Select(item => item.OrderItemsId).ToList(),
+                    Items = group
+                        .OrderBy(item => item.OrderedAt)
+                        .ThenBy(item => item.OrderItemsId)
+                        .Select(item => new ToBuyPurchaseItem
+                        {
+                            OrderItemId = item.OrderItemsId,
+                            OrderId = item.OrderId,
+                            Quantity = item.Quantity
+                        })
+                        .ToList(),
                     OrderIds = group.Select(item => item.OrderId).Distinct().ToList(),
                     OrderNumbers = group.Select(item => item.OrderNo).Distinct().OrderBy(number => number).ToList()
                 })
@@ -241,6 +254,23 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 .ThenBy(group => group.ProductSpec2)
                 .ToList()
         };
+
+        model.Orders = paidItems
+            .GroupBy(item => new { item.OrderId, item.OrderNo, item.OrderedAt })
+            .Select(group => new ToBuyOrderProgress
+            {
+                OrderId = group.Key.OrderId,
+                OrderNo = group.Key.OrderNo,
+                OrderedAt = group.Key.OrderedAt,
+                Items = group.Select(item => new ToBuyPurchaseItem
+                {
+                    OrderItemId = item.OrderItemsId,
+                    OrderId = item.OrderId,
+                    Quantity = item.Quantity
+                }).ToList()
+            })
+            .OrderBy(order => order.OrderedAt)
+            .ToList();
 
         return View(model);
     }
@@ -1123,6 +1153,7 @@ public class SellerOrderManageViewModel
 public class ToBuyListViewModel
 {
     public List<ToBuyListGroup> Groups { get; set; } = [];
+    public List<ToBuyOrderProgress> Orders { get; set; } = [];
     public int TotalQuantity => Groups.Sum(group => group.TotalQuantity);
     public int TotalOrderCount => Groups.SelectMany(group => group.OrderIds).Distinct().Count();
 }
@@ -1135,8 +1166,25 @@ public class ToBuyListGroup
     public string? ProductSpec2 { get; set; }
     public string? ImageUrl { get; set; }
     public int TotalQuantity { get; set; }
+    public List<int> OrderItemIds { get; set; } = [];
+    public List<ToBuyPurchaseItem> Items { get; set; } = [];
     public List<int> OrderIds { get; set; } = [];
     public List<string> OrderNumbers { get; set; } = [];
+}
+
+public class ToBuyOrderProgress
+{
+    public int OrderId { get; set; }
+    public string OrderNo { get; set; } = string.Empty;
+    public DateTime OrderedAt { get; set; }
+    public List<ToBuyPurchaseItem> Items { get; set; } = [];
+}
+
+public class ToBuyPurchaseItem
+{
+    public int OrderItemId { get; set; }
+    public int OrderId { get; set; }
+    public int Quantity { get; set; }
 }
 
 public class SellerOrderListItem

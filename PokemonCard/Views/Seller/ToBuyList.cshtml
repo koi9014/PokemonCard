@@ -8,46 +8,41 @@
     <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
             <h1 class="text-2xl font-bold text-[#0d1e25]">待採購清單</h1>
-            <p class="mt-1 text-sm text-[#5a413f]">彙總所有已付款、尚未完成採購的商品。</p>
+            <p class="mt-1 text-sm text-[#5a413f]">已採購數量是此瀏覽器的備忘，不會直接變更訂單狀態。</p>
         </div>
-        <div class="flex gap-3 text-sm">
+        <div class="flex flex-wrap gap-3 text-sm">
             <span class="rounded-lg bg-[#eef5f9] px-4 py-2">訂單 <strong>@Model.TotalOrderCount</strong> 筆</span>
             <span class="rounded-lg bg-[#fff4e5] px-4 py-2">待採購 <strong>@Model.TotalQuantity</strong> 件</span>
+            <span class="rounded-lg bg-green-50 px-4 py-2 text-green-700">已採購 <strong id="total-purchased-quantity">0</strong> 件</span>
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] is string successMessage)
-    {
-        <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">@successMessage</div>
-    }
-    @if (TempData["ErrorMessage"] is string errorMessage)
-    {
-        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">@errorMessage</div>
-    }
+    <div id="order-progress-reminders" class="mb-5 space-y-2"></div>
 
     @if (Model.Groups.Count == 0)
     {
-        <div class="rounded-xl bg-[#f8fbfd] px-6 py-12 text-center text-[#5a413f]">
-            目前沒有待採購商品。
-        </div>
+        <div class="rounded-xl bg-[#f8fbfd] px-6 py-12 text-center text-[#5a413f]">目前沒有待採購商品。</div>
     }
     else
     {
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[760px] border-collapse text-left">
+            <table class="w-full min-w-[900px] border-collapse text-left">
                 <thead>
                     <tr class="border-y border-[#e2bebb] bg-[#eef5f9] text-sm text-[#5a413f]">
                         <th class="px-4 py-3">商品</th>
                         <th class="px-4 py-3">規格</th>
                         <th class="px-4 py-3 text-center">相關訂單</th>
-                        <th class="px-4 py-3 text-center">待採購數量</th>
-                        <th class="px-4 py-3 text-right">操作</th>
+                        <th class="px-4 py-3 text-center">待採購</th>
+                        <th class="px-4 py-3">採購進度</th>
+                        <th class="px-4 py-3 text-right">已採購數量</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#e2bebb]/60">
                     @foreach (var group in Model.Groups)
                     {
-                        <tr class="hover:bg-[#f8fbfd]">
+                        <tr class="purchase-row transition-colors hover:bg-[#f8fbfd]"
+                            data-items="@System.Text.Json.JsonSerializer.Serialize(group.Items)"
+                            data-total="@group.TotalQuantity">
                             <td class="px-4 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f4faff]">
@@ -62,7 +57,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-[#0d1e25]">@group.ProductName</div>
-                                        <div class="mt-1 text-xs text-[#5a413f]">商品編號：@group.ProductId</div>
+                                        <span class="purchase-complete-badge mt-1 hidden w-fit rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">採購完成</span>
                                     </div>
                                 </div>
                             </td>
@@ -86,18 +81,17 @@
                                 </details>
                             </td>
                             <td class="px-4 py-4 text-center text-2xl font-extrabold text-[#ef5350]">@group.TotalQuantity</td>
+                            <td class="min-w-48 px-4 py-4">
+                                <div class="h-2 overflow-hidden rounded-full bg-slate-200">
+                                    <div class="purchase-progress-bar h-full rounded-full bg-green-500 transition-all" style="width:0%"></div>
+                                </div>
+                                <div class="purchase-progress-text mt-2 text-sm text-[#5a413f]">0／@group.TotalQuantity 件</div>
+                            </td>
                             <td class="px-4 py-4 text-right">
-                                <form asp-controller="Seller" asp-action="CompletePurchasing" method="post" onsubmit="return confirm('確定這組商品都已採購完成嗎？相關訂單將移至待出貨。');">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="returnTo" value="ToBuyList" />
-                                    @foreach (var orderId in group.OrderIds)
-                                    {
-                                        <input type="hidden" name="selectedOrderIds" value="@orderId" />
-                                    }
-                                    <button type="submit" class="rounded-lg bg-[#42a5f5] px-4 py-2 text-sm font-bold text-white hover:bg-[#1976d2]">
-                                        確認採購完成
-                                    </button>
-                                </form>
+                                <div class="inline-flex items-center gap-2">
+                                    <input type="number" min="0" max="@group.TotalQuantity" value="0" class="purchased-quantity-input w-20 rounded-lg border border-[#e2bebb] px-3 py-2 text-center" aria-label="已採購數量" />
+                                    <button type="button" class="save-purchased-quantity rounded-lg bg-[#42a5f5] px-4 py-2 text-sm font-bold text-white hover:bg-[#1976d2]">更新</button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -106,3 +100,107 @@
         </div>
     }
 </div>
+
+<script>
+    const purchaseQuantityStorageKey = 'picartchu-purchased-order-item-quantities';
+    const orderProgressData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Orders));
+
+    function getPurchasedQuantities() {
+        try {
+            const value = JSON.parse(localStorage.getItem(purchaseQuantityStorageKey) || '{}');
+            return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        } catch {
+            return {};
+        }
+    }
+
+    function savePurchasedQuantities(quantities) {
+        localStorage.setItem(purchaseQuantityStorageKey, JSON.stringify(quantities));
+    }
+
+    function allocatedQuantity(item, quantities) {
+        const saved = Number(quantities[item.OrderItemId] || 0);
+        return Math.max(0, Math.min(item.Quantity, saved));
+    }
+
+    function refreshPurchaseProgress() {
+        const quantities = getPurchasedQuantities();
+        let totalPurchased = 0;
+
+        document.querySelectorAll('.purchase-row').forEach(row => {
+            const items = JSON.parse(row.dataset.items || '[]');
+            const total = Number(row.dataset.total || 0);
+            const purchased = items.reduce((sum, item) => sum + allocatedQuantity(item, quantities), 0);
+            const complete = total > 0 && purchased >= total;
+            totalPurchased += purchased;
+
+            row.querySelector('.purchased-quantity-input').value = purchased;
+            row.querySelector('.purchase-progress-text').textContent = `${purchased}／${total} 件`;
+            row.querySelector('.purchase-progress-bar').style.width = `${total ? purchased / total * 100 : 0}%`;
+            row.querySelector('.purchase-complete-badge').classList.toggle('hidden', !complete);
+            row.classList.toggle('bg-green-50', complete);
+        });
+
+        const totalElement = document.getElementById('total-purchased-quantity');
+        if (totalElement) totalElement.textContent = totalPurchased;
+        renderOrderReminders(quantities);
+    }
+
+    function renderOrderReminders(quantities) {
+        const container = document.getElementById('order-progress-reminders');
+        if (!container) return;
+        container.innerHTML = '';
+
+        orderProgressData.forEach(order => {
+            const required = order.Items.reduce((sum, item) => sum + item.Quantity, 0);
+            const purchased = order.Items.reduce((sum, item) => sum + allocatedQuantity(item, quantities), 0);
+            if (purchased === 0) return;
+
+            const complete = purchased >= required;
+            const reminder = document.createElement('div');
+            reminder.className = complete
+                ? 'flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700'
+                : 'flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800';
+
+            const message = document.createElement('span');
+            message.textContent = complete
+                ? `✓ 訂單 ${order.OrderNo} 的商品皆已採購完成，可以轉換為待出貨。`
+                : `訂單 ${order.OrderNo}：已採購 ${purchased}／${required} 件。`;
+            reminder.appendChild(message);
+
+            const link = document.createElement('a');
+            link.href = complete
+                ? `/Seller/OrderManage?search=${encodeURIComponent(order.OrderNo)}`
+                : `/MyAccount/OrderDetail/${order.OrderId}`;
+            link.className = 'font-bold underline';
+            link.textContent = complete ? '前往更新狀態' : '查看訂單';
+            reminder.appendChild(link);
+            container.appendChild(reminder);
+        });
+    }
+
+    document.querySelectorAll('.save-purchased-quantity').forEach(button => {
+        button.addEventListener('click', () => {
+            const row = button.closest('.purchase-row');
+            const items = JSON.parse(row.dataset.items || '[]');
+            const total = Number(row.dataset.total || 0);
+            const input = row.querySelector('.purchased-quantity-input');
+            const target = Math.max(0, Math.min(total, Number.parseInt(input.value, 10) || 0));
+            const quantities = getPurchasedQuantities();
+            let remaining = target;
+
+            // Controller 已依訂單成立時間排序，先成立的訂單優先分配。
+            items.forEach(item => {
+                const allocated = Math.min(item.Quantity, remaining);
+                if (allocated > 0) quantities[item.OrderItemId] = allocated;
+                else delete quantities[item.OrderItemId];
+                remaining -= allocated;
+            });
+
+            savePurchasedQuantities(quantities);
+            refreshPurchaseProgress();
+        });
+    });
+
+    refreshPurchaseProgress();
+</script>

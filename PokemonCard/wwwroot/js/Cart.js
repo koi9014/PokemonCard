@@ -86,7 +86,8 @@ function updateCartBadge(count) {
 function addToCart(
     productId,
     specificationId,
-    quantity
+    quantity,
+    onSuccess
 ) {
 
     const formData =
@@ -123,7 +124,12 @@ function addToCart(
         body: formData
 
     })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("伺服器回應錯誤");
+            }
+            return response.json();
+        })
         .then(data => {
 
             if (data.success) {
@@ -134,9 +140,17 @@ function addToCart(
                 );
 
 
-                // 顯示加入購物車小視窗
-                showCartToast();
+                if (typeof onSuccess === "function") {
+                    onSuccess(data);
+                }
+                else {
+                    // 顯示加入購物車小視窗
+                    showCartToast();
+                }
 
+            }
+            else {
+                alert(data.message || "加入購物車失敗");
             }
 
         })
@@ -146,6 +160,8 @@ function addToCart(
                 "加入購物車失敗：",
                 error
             );
+
+            alert("加入購物車失敗，請稍後再試。");
 
         });
 
