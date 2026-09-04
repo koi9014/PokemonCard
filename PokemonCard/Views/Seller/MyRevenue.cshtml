@@ -78,7 +78,7 @@
                 <!-- 狀態頁籤 -->
                 <div class="flex items-center gap-2 mt-2 overflow-x-auto pb-1">
                     @{
-                        var tabs = new[] { "全部", "待撥款", "撥款完成", "撥款取消" };
+                        var tabs = new[] { "全部", "待撥款", "已撥款", "撥款取消" };
                         string activeClass = "bg-primary text-on-primary font-bold text-xs whitespace-nowrap transition-colors px-4 py-1.5 rounded-full cursor-pointer";
                         string inactiveClass = "bg-surface-container-lowest text-on-surface-variant border border-outline-variant hover:bg-surface-container hover:text-on-surface font-bold text-xs whitespace-nowrap transition-colors px-4 py-1.5 rounded-full cursor-pointer";
                     }
@@ -120,14 +120,14 @@
                                 {
                                     "待撥款" => "bg-amber-50 text-amber-700 border border-amber-200",
                                     "撥款取消" => "bg-red-50 text-red-700 border border-red-200",
-                                    "撥款完成" => "bg-green-50 text-green-700 border border-green-200",
+                                    "已撥款" => "bg-green-50 text-green-700 border border-green-200",
                                     _ => "bg-slate-50 text-slate-700 border border-slate-200"
                                 };
                                 var remitDotStyle = remitResult switch
                                 {
                                     "待撥款" => "bg-amber-500",
                                     "撥款取消" => "bg-red-500",
-                                    "撥款完成" => "bg-green-500",
+                                    "已撥款" => "bg-green-500",
                                     _ => "bg-slate-500"
                                 };
 

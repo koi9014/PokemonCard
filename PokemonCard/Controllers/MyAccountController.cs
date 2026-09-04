@@ -184,10 +184,16 @@ namespace PokemonCard. Controllers
                     IsManual = false,
                     AdminId = null,
                     CreatedAt = now,
-                    RemitStatus = "PENDING",
-                    RemitResult = null,
-                    RemitDate = null
+                    RemitStatus = "SUCCESS",
+                    RemitResult = "已撥款",
+                    RemitDate = now
                 });
+            }
+            else
+            {
+                order.MoneyReconciliation.RemitStatus = "SUCCESS";
+                order.MoneyReconciliation.RemitResult = "已撥款";
+                order.MoneyReconciliation.RemitDate = now;
             }
 
             await _context.SaveChangesAsync();
