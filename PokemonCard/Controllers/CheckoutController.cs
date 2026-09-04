@@ -153,11 +153,6 @@ namespace PokemonCard. Controllers
             }
 
 
-            if(string. IsNullOrWhiteSpace(email))
-            {
-                return Content("請輸入 Email");
-            }
-
 
             if(string. IsNullOrWhiteSpace(city))
             {
