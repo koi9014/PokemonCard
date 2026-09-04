@@ -6,11 +6,13 @@
     <h5 class="fw-bold mb-3">我的訂單</h5>
 
     <div class="list-group mb-4">
-        <a href="#" class="list-group-item list-group-item-action">待付款</a>
-        <a href="#" class="list-group-item list-group-item-action">待出貨</a>
-        <a href="#" class="list-group-item list-group-item-action">待收貨</a>
-        <a href="#" class="list-group-item list-group-item-action">已完成</a>
-        <a href="#" class="list-group-item list-group-item-action">退貨</a>
+        <a asp-controller="MyAccount" asp-action="Index" class="list-group-item list-group-item-action">總覽</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="PENDING" class="list-group-item list-group-item-action">待付款</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="PAID" class="list-group-item list-group-item-action">已付款</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="PROCESSING" class="list-group-item list-group-item-action">待出貨</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="SHIPPED" class="list-group-item list-group-item-action">待收貨</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="COMPLETED" class="list-group-item list-group-item-action">已完成</a>
+        <a asp-controller="MyAccount" asp-action="Index" asp-route-status="CANCELLED" class="list-group-item list-group-item-action">已取消</a>
     </div>
 
     <h5 class="fw-bold mb-3">賣家中心</h5>
@@ -27,6 +29,7 @@
 
     <div class="list-group mb-4">
         <a href="~/Seller/OrderManage" class="list-group-item list-group-item-action">訂單查詢</a>
+        <a asp-controller="Seller" asp-action="ToBuyList" class="list-group-item list-group-item-action">待採購清單</a>
         <a href="~/Seller/OrderManage?status=PROCESSING" class="list-group-item list-group-item-action">待出貨</a>
         <a href="~/Seller/OrderManage?status=COMPLETED" class="list-group-item list-group-item-action">已完成</a>
     </div>

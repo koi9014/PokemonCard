@@ -76,9 +76,11 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             orders = orders.Where(order => order.OrderedAt < nextDay);
         }
 
+        var salesOrders = orders.Where(order => order.OrderStatus.ToUpper() != "CANCELLED");
+
         var totalOrders = await orders.CountAsync();
-        var totalSales = await orders.SumAsync(order => (decimal?)order.OrderAmount) ?? 0;
-        var monthlySales = await orders
+        var totalSales = await salesOrders.SumAsync(order => (decimal?)order.OrderAmount) ?? 0;
+        var monthlySales = await salesOrders
             .Where(order => order.OrderedAt.Year == year)
             .GroupBy(order => order.OrderedAt.Month)
             .Select(group => new { group.Key, Total = group.Sum(order => (decimal)order.OrderAmount) })
@@ -105,7 +107,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                     && item.RemitDate.Value.Year == year
                     && item.RemitDate.Value.Month == today.Month)
                 .SumAsync(item => (decimal?)item.SellerPayout) ?? 0,
-            PendingShipments = await orders.CountAsync(order => order.OrderStatus == "Processing"),
+            PendingShipments = await orders.CountAsync(order => order.OrderStatus.ToUpper() == "PROCESSING"),
             TotalRevenueDisplay = chartData.Sum().ToString("N0"),
             GrowthRate = "18.5",
             RecentOrders = await orders
@@ -186,6 +188,152 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         return View(model);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ToBuyList()
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var paidItems = await context.OrderItems
+            .AsNoTracking()
+            .Where(item => item.Order.SellerId == sellerId.Value
+                && item.Order.OrderStatus.ToUpper() == "PAID")
+            .Select(item => new
+            {
+                item.OrderId,
+                item.Order.OrderNo,
+                item.ProductId,
+                item.ProductName,
+                item.ProductSpec,
+                item.ProductSpec2,
+                item.Quantity,
+                ImageUrl = item.Product.ProductImages
+                    .OrderBy(image => image.ImageOrder)
+                    .Select(image => image.ImageUrl)
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        var model = new ToBuyListViewModel
+        {
+            Groups = paidItems
+                .GroupBy(item => new
+                {
+                    item.ProductId,
+                    item.ProductName,
+                    item.ProductSpec,
+                    item.ProductSpec2,
+                    item.ImageUrl
+                })
+                .Select(group => new ToBuyListGroup
+                {
+                    ProductId = group.Key.ProductId,
+                    ProductName = group.Key.ProductName,
+                    ProductSpec = group.Key.ProductSpec,
+                    ProductSpec2 = group.Key.ProductSpec2,
+                    ImageUrl = group.Key.ImageUrl,
+                    TotalQuantity = group.Sum(item => item.Quantity),
+                    OrderIds = group.Select(item => item.OrderId).Distinct().ToList(),
+                    OrderNumbers = group.Select(item => item.OrderNo).Distinct().OrderBy(number => number).ToList()
+                })
+                .OrderBy(group => group.ProductName)
+                .ThenBy(group => group.ProductSpec)
+                .ThenBy(group => group.ProductSpec2)
+                .ToList()
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompletePurchasing(List<int>? selectedOrderIds, string? returnTo = null)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+        var redirectAction = returnTo == nameof(ToBuyList) ? nameof(ToBuyList) : nameof(OrderManage);
+        if (selectedOrderIds is not { Count: > 0 })
+        {
+            TempData["ErrorMessage"] = "請先選擇訂單。";
+            return RedirectToAction(redirectAction);
+        }
+
+        var orders = await context.Orders
+            .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
+            .ToListAsync();
+        if (orders.Count != selectedOrderIds.Distinct().Count()
+            || orders.Any(order => order.OrderStatus.ToUpper() != "PAID"))
+        {
+            TempData["ErrorMessage"] = "只有已付款的訂單可以設為採購完成。";
+            return RedirectToAction(redirectAction);
+        }
+
+        var now = DateTime.Now;
+        foreach (var order in orders)
+        {
+            order.OrderStatus = "PROCESSING";
+            order.OrderUpdatedAt = now;
+            context.OrderHistories.Add(new OrderHistory
+            {
+                OrderNo = order.OrderNo,
+                OrderStatus = "PROCESSING",
+                ChangeTime = now,
+                ChangeReason = "賣家已完成採購",
+                ChangedByUserId = sellerId.Value
+            });
+        }
+
+        await context.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"已將 {orders.Count} 筆訂單設為採購完成，等待出貨。";
+        return RedirectToAction(redirectAction);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelOrder(int orderId, string? cancelReason)
+    {
+        var sellerId = await GetCurrentSellerIdAsync();
+        if (!sellerId.HasValue) return RedirectToAction("Login", "UserLogin");
+
+        var reason = cancelReason?.Trim();
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            TempData["ErrorMessage"] = "請填寫取消原因。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+        if (reason.Length > 50)
+        {
+            TempData["ErrorMessage"] = "取消原因最多 50 個字。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var order = await context.Orders
+            .SingleOrDefaultAsync(item => item.OrderId == orderId && item.SellerId == sellerId.Value);
+        if (order is null) return NotFound();
+        var normalizedStatus = order.OrderStatus.Trim().ToUpperInvariant();
+        if (normalizedStatus is not ("PENDING" or "PAID"))
+        {
+            TempData["ErrorMessage"] = "只有待付款或尚未完成採購的已付款訂單可以取消。";
+            return RedirectToAction(nameof(OrderManage));
+        }
+
+        var now = DateTime.Now;
+        order.OrderStatus = "CANCELLED";
+        order.OrderUpdatedAt = now;
+        context.OrderHistories.Add(new OrderHistory
+        {
+            OrderNo = order.OrderNo,
+            OrderStatus = "CANCELLED",
+            ChangeTime = now,
+            ChangeReason = reason,
+            ChangedByUserId = sellerId.Value
+        });
+
+        await context.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"訂單 {order.OrderNo} 已取消。";
+        return RedirectToAction(nameof(OrderManage));
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ShipOrders(List<int>? selectedOrderIds)
@@ -201,15 +349,24 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         var orders = await context.Orders
             .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
             .ToListAsync();
-        if (orders.Any(order => !IsOrderActionable(order.OrderStatus)))
+        if (orders.Count != selectedOrderIds.Distinct().Count()
+            || orders.Any(order => order.OrderStatus.ToUpper() != "PROCESSING"))
         {
-            TempData["ErrorMessage"] = "已完成、已出貨或已取消的訂單不可執行出貨。";
+            TempData["ErrorMessage"] = "只有待出貨的訂單可以確認出貨。";
             return RedirectToAction(nameof(OrderManage));
         }
         foreach (var order in orders)
         {
             order.OrderStatus = "SHIPPED";
             order.OrderUpdatedAt = DateTime.Now;
+            context.OrderHistories.Add(new OrderHistory
+            {
+                OrderNo = order.OrderNo,
+                OrderStatus = "SHIPPED",
+                ChangeTime = order.OrderUpdatedAt.Value,
+                ChangeReason = "賣家確認出貨",
+                ChangedByUserId = sellerId.Value
+            });
         }
 
         await context.SaveChangesAsync();
@@ -961,6 +1118,25 @@ public class SellerOrderManageViewModel
     public int PageSize { get; set; }
     public int TotalCount { get; set; }
     public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+}
+
+public class ToBuyListViewModel
+{
+    public List<ToBuyListGroup> Groups { get; set; } = [];
+    public int TotalQuantity => Groups.Sum(group => group.TotalQuantity);
+    public int TotalOrderCount => Groups.SelectMany(group => group.OrderIds).Distinct().Count();
+}
+
+public class ToBuyListGroup
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string? ProductSpec { get; set; }
+    public string? ProductSpec2 { get; set; }
+    public string? ImageUrl { get; set; }
+    public int TotalQuantity { get; set; }
+    public List<int> OrderIds { get; set; } = [];
+    public List<string> OrderNumbers { get; set; } = [];
 }
 
 public class SellerOrderListItem
