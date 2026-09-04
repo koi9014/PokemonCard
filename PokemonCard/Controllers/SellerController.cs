@@ -43,7 +43,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         {
             return remitResult switch
             {
-                "撥款成功" or "匯款完成" or "SUCCESS" => "撥款完成",
+                "已撥款" or "撥款完成" or "撥款成功" or "匯款完成" or "SUCCESS" => "已撥款",
                 "撥款失敗" or "撥款取消" or "CANCELLED" => "撥款取消",
                 _ => remitResult
             };
@@ -52,7 +52,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         return remitStatus switch
         {
             "PENDING" => "待撥款",
-            "COMPLETED" or "SUCCESS" => "撥款完成",
+            "COMPLETED" or "SUCCESS" => "已撥款",
             "CANCELLED" or "FAILED" => "撥款取消",
             _ => "待撥款"
         };
@@ -102,7 +102,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             AvgOrderValue = totalOrders == 0 ? 0 : totalSales / totalOrders,
             MonthlyCreditedAmount = await context.MoneyReconciliations
                 .Where(item => item.Order.SellerId == sellerId.Value
-                    && (item.RemitResult == "撥款成功" || item.RemitResult == "匯款完成")
+                    && (item.RemitStatus == "COMPLETED" || item.RemitStatus == "SUCCESS")
                     && item.RemitDate.HasValue
                     && item.RemitDate.Value.Year == year
                     && item.RemitDate.Value.Month == today.Month)
@@ -200,8 +200,10 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 && item.Order.OrderStatus.ToUpper() == "PAID")
             .Select(item => new
             {
+                item.OrderItemsId,
                 item.OrderId,
                 item.Order.OrderNo,
+                item.Order.OrderedAt,
                 item.ProductId,
                 item.ProductName,
                 item.ProductSpec,
@@ -233,6 +235,17 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                     ProductSpec2 = group.Key.ProductSpec2,
                     ImageUrl = group.Key.ImageUrl,
                     TotalQuantity = group.Sum(item => item.Quantity),
+                    OrderItemIds = group.Select(item => item.OrderItemsId).ToList(),
+                    Items = group
+                        .OrderBy(item => item.OrderedAt)
+                        .ThenBy(item => item.OrderItemsId)
+                        .Select(item => new ToBuyPurchaseItem
+                        {
+                            OrderItemId = item.OrderItemsId,
+                            OrderId = item.OrderId,
+                            Quantity = item.Quantity
+                        })
+                        .ToList(),
                     OrderIds = group.Select(item => item.OrderId).Distinct().ToList(),
                     OrderNumbers = group.Select(item => item.OrderNo).Distinct().OrderBy(number => number).ToList()
                 })
@@ -241,6 +254,23 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 .ThenBy(group => group.ProductSpec2)
                 .ToList()
         };
+
+        model.Orders = paidItems
+            .GroupBy(item => new { item.OrderId, item.OrderNo, item.OrderedAt })
+            .Select(group => new ToBuyOrderProgress
+            {
+                OrderId = group.Key.OrderId,
+                OrderNo = group.Key.OrderNo,
+                OrderedAt = group.Key.OrderedAt,
+                Items = group.Select(item => new ToBuyPurchaseItem
+                {
+                    OrderItemId = item.OrderItemsId,
+                    OrderId = item.OrderId,
+                    Quantity = item.Quantity
+                }).ToList()
+            })
+            .OrderBy(order => order.OrderedAt)
+            .ToList();
 
         return View(model);
     }
@@ -347,6 +377,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         }
 
         var orders = await context.Orders
+            .Include(order => order.MoneyReconciliation)
             .Where(order => order.SellerId == sellerId.Value && selectedOrderIds.Contains(order.OrderId))
             .ToListAsync();
         if (orders.Count != selectedOrderIds.Distinct().Count()
@@ -355,10 +386,11 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             TempData["ErrorMessage"] = "只有待出貨的訂單可以確認出貨。";
             return RedirectToAction(nameof(OrderManage));
         }
+        var now = DateTime.Now;
         foreach (var order in orders)
         {
             order.OrderStatus = "SHIPPED";
-            order.OrderUpdatedAt = DateTime.Now;
+            order.OrderUpdatedAt = now;
             context.OrderHistories.Add(new OrderHistory
             {
                 OrderNo = order.OrderNo,
@@ -367,6 +399,25 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                 ChangeReason = "賣家確認出貨",
                 ChangedByUserId = sellerId.Value
             });
+
+            if (order.MoneyReconciliation is null)
+            {
+                var platformRevenue = (int)Math.Round(order.OrderAmount * 0.05m, MidpointRounding.AwayFromZero);
+                context.MoneyReconciliations.Add(new MoneyReconciliation
+                {
+                    OrderId = order.OrderId,
+                    OrderAmount = order.OrderAmount,
+                    PlatformRevenue = platformRevenue,
+                    SellerPayout = order.OrderAmount - platformRevenue,
+                    AdjustAmount = 0,
+                    IsManual = false,
+                    AdminId = null,
+                    CreatedAt = now,
+                    RemitStatus = "PENDING",
+                    RemitResult = null,
+                    RemitDate = null
+                });
+            }
         }
 
         await context.SaveChangesAsync();
@@ -1052,7 +1103,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             reconciliations = status switch
             {
                 "待撥款" => reconciliations.Where(item => item.RemitStatus == "PENDING" || item.RemitResult == "待撥款"),
-                "撥款完成" => reconciliations.Where(item => item.RemitStatus == "COMPLETED" || item.RemitStatus == "SUCCESS" || item.RemitResult == "撥款完成" || item.RemitResult == "撥款成功" || item.RemitResult == "匯款完成"),
+                "已撥款" => reconciliations.Where(item => item.RemitStatus == "COMPLETED" || item.RemitStatus == "SUCCESS" || item.RemitResult == "已撥款" || item.RemitResult == "撥款完成" || item.RemitResult == "撥款成功" || item.RemitResult == "匯款完成"),
                 "撥款取消" => reconciliations.Where(item => item.RemitStatus == "CANCELLED" || item.RemitStatus == "FAILED" || item.RemitResult == "撥款取消" || item.RemitResult == "撥款失敗"),
                 _ => reconciliations
             };
@@ -1123,6 +1174,7 @@ public class SellerOrderManageViewModel
 public class ToBuyListViewModel
 {
     public List<ToBuyListGroup> Groups { get; set; } = [];
+    public List<ToBuyOrderProgress> Orders { get; set; } = [];
     public int TotalQuantity => Groups.Sum(group => group.TotalQuantity);
     public int TotalOrderCount => Groups.SelectMany(group => group.OrderIds).Distinct().Count();
 }
@@ -1135,8 +1187,25 @@ public class ToBuyListGroup
     public string? ProductSpec2 { get; set; }
     public string? ImageUrl { get; set; }
     public int TotalQuantity { get; set; }
+    public List<int> OrderItemIds { get; set; } = [];
+    public List<ToBuyPurchaseItem> Items { get; set; } = [];
     public List<int> OrderIds { get; set; } = [];
     public List<string> OrderNumbers { get; set; } = [];
+}
+
+public class ToBuyOrderProgress
+{
+    public int OrderId { get; set; }
+    public string OrderNo { get; set; } = string.Empty;
+    public DateTime OrderedAt { get; set; }
+    public List<ToBuyPurchaseItem> Items { get; set; } = [];
+}
+
+public class ToBuyPurchaseItem
+{
+    public int OrderItemId { get; set; }
+    public int OrderId { get; set; }
+    public int Quantity { get; set; }
 }
 
 public class SellerOrderListItem
