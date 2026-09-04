@@ -35,7 +35,7 @@
     else
     {
         <!-- 有訂單 -->
-        <div class="card-body">
+        @* <div class="card-body">
 
             @foreach(var item in Model.Orders)
             {
@@ -112,7 +112,146 @@
                 </div>
             }
 
+        </div> *@
+        <div class="card-body">
+
+            @foreach(var order in Model.Orders)
+            {
+                <!-- ==============================
+             一個 Order = 一個框框
+        =============================== -->
+                <div class="card mb-4 shadow-sm">
+
+                    <!-- 訂單標題 -->
+                    <div class="card-header d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <span class="me-4">
+                                訂單編號：
+                                <span class="fw-bold">
+                                    @order.OrderNo
+                                </span>
+                            </span>
+
+                            <span>
+                                賣家：
+                                <span class="fw-bold">
+                                    @order.Seller.FullName
+                                </span>
+                            </span>
+
+                        </div>
+
+                        <span class="text-primary">
+                            @PokemonCard.Helpers.OrderStatus.GetText(order.OrderStatus)
+                        </span>
+
+                    </div>
+
+
+                    <!-- ==============================
+                 這一筆 Order 的所有商品
+            =============================== -->
+                    <div class="card-body">
+
+                        @foreach(var item in order.OrderItems)
+                        {
+                            <div class="row align-items-center mb-3 pb-3 border-bottom">
+
+                                <!-- 商品圖片 -->
+                                <div class="col-md-3">
+
+                                    <img src="@item.Product?.ProductImages.FirstOrDefault( )?.ImageUrl"
+                                         width="150"
+                                         height="150"
+                                         alt="@item.ProductName"
+                                         class="img-fluid">
+
+                                </div>
+
+
+                                <!-- 商品資訊 -->
+                                <div class="col-md-9">
+
+                                    <h5>
+                                        @item.ProductName
+                                    </h5>
+
+                                    @if(!string.IsNullOrEmpty(item.ProductSpec))
+                                    {
+                                        <p class="text-muted">
+                                            規格：@item.ProductSpec
+                                        </p>
+                                    }
+
+                                    @if(!string.IsNullOrEmpty(item.ProductSpec2))
+                                    {
+                                        <p class="text-muted">
+                                            @item.ProductSpec2
+                                        </p>
+                                    }
+
+                                    <p>
+                                        數量：@item.Quantity
+                                    </p>
+
+                                    <p>
+                                        單價：
+                                        NT$ @item.UnitPrice.ToString("N0")
+                                    </p>
+
+                                    <p class="fw-bold text-danger">
+                                        小計：
+                                        NT$ @((item.UnitPrice * item.Quantity).ToString("N0"))
+                                    </p>
+
+                                </div>
+
+                            </div>
+                        }
+
+
+                        <!-- ==============================
+                     訂單底部資訊
+                =============================== -->
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+
+                            <!-- 訂單總金額 -->
+                            <div>
+
+                                <span class="fw-bold">
+                                    訂單金額：
+                                </span>
+
+                                <span class="fw-bold text-danger">
+                                    NT$ @order.OrderAmount.ToString("N0")
+                                </span>
+
+                            </div>
+
+
+                            <!-- 訂單詳情 -->
+                            <div>
+
+                                <a asp-controller="MyAccount"
+                                   asp-action="OrderDetail"
+                                   asp-route-id="@order.OrderId"
+                                   class="btn btn-primary">
+                                    訂單詳情
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
         </div>
+
     }
 
 </div>

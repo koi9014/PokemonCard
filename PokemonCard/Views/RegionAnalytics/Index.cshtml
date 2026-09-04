@@ -33,6 +33,31 @@
         width: 0.9rem;
     }
 
+    /* ===== [交易熱度圖例優化開始] ===== */
+    .map-legend-row {
+        align-items: center;
+        display: flex;
+        gap: 0.4rem;
+        min-height: 1.55rem;
+        white-space: nowrap;
+    }
+
+    .map-legend-row i {
+        margin-right: 0;
+    }
+
+    .pulse-legend-sample {
+        background: rgba(220, 53, 69, 0.88);
+        border: 1px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(33, 37, 41, 0.35);
+        display: inline-block;
+        flex: 0 0 auto;
+        height: var(--legend-pulse-size);
+        width: var(--legend-pulse-size);
+    }
+    /* ===== [交易熱度圖例優化結束] ===== */
+
     .region-map-label {
         background: transparent;
         border: 0;
@@ -52,12 +77,114 @@
         width: 100px;
     }
 
-    .analytics-table {
-        margin: 0 auto;
-        max-width: 1100px;
-        table-layout: fixed;
-        width: 100%;
+    /* ===== [地圖顯示模式與商品種類總覽新增開始] ===== */
+    .map-mode-switch .btn {
+        min-width: 7rem;
     }
+
+    .region-summary-offcanvas {
+        width: min(430px, 100vw) !important;
+    }
+
+    .product-type-donut {
+        align-items: center;
+        border-radius: 50%;
+        display: flex;
+        height: 210px;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        width: 210px;
+    }
+
+    .product-type-donut::after {
+        background: #ffffff;
+        border-radius: 50%;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+        content: '';
+        height: 122px;
+        position: absolute;
+        width: 122px;
+    }
+
+    .product-type-donut-center {
+        position: relative;
+        text-align: center;
+        z-index: 1;
+    }
+
+    .product-type-legend-dot {
+        border-radius: 50%;
+        flex: 0 0 auto;
+        height: 0.75rem;
+        width: 0.75rem;
+    }
+
+    .region-pulse-icon {
+        background: transparent;
+        border: 0;
+    }
+
+    .region-pulse-dot {
+        align-items: center;
+        background: rgba(220, 53, 69, 0.88);
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px rgba(33, 37, 41, 0.35);
+        display: flex;
+        height: var(--pulse-size);
+        justify-content: center;
+        position: relative;
+        width: var(--pulse-size);
+    }
+
+    .region-pulse-dot::before {
+        animation: region-pulse 1.8s ease-out infinite;
+        border: 3px solid rgba(220, 53, 69, 0.6);
+        border-radius: 50%;
+        content: '';
+        inset: -2px;
+        position: absolute;
+    }
+
+    .region-pulse-dot.is-empty {
+        background: #adb5bd;
+    }
+
+    .region-pulse-dot.is-empty::before {
+        display: none;
+    }
+
+    .region-pulse-name {
+        color: #212529;
+        font-size: 0.82rem;
+        font-weight: 700;
+        left: 50%;
+        position: absolute;
+        text-shadow: 0 1px 2px #ffffff, 0 -1px 2px #ffffff;
+        top: calc(100% + 0.4rem);
+        transform: translateX(-50%);
+        white-space: nowrap;
+    }
+
+    @@keyframes region-pulse {
+        0% {
+            opacity: 0.9;
+            transform: scale(0.85);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(1.85);
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .region-pulse-dot::before {
+            animation: none;
+        }
+    }
+    /* ===== [地圖顯示模式與商品種類總覽新增結束] ===== */
 </style>
 
 <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
@@ -70,47 +197,29 @@
 
 <div id="analytics-error" class="alert alert-danger d-none" role="alert"></div>
 
-<section class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-        <div>
-            <h2 class="h5 mb-1">日本八大地區及沖繩訂單熱力地圖</h2>
-            <p class="small text-secondary mb-0">顏色深淺依地區訂購件數顯示；沖繩獨立統計。</p>
-        </div>
-        <div class="d-flex align-items-center gap-3 small text-secondary">
-            <span id="analytics-period">資料期間：讀取中</span>
-            <span>點擊區塊可查看該地區彙總</span>
-        </div>
-    </div>
-    <div class="card-body p-0">
-        <div id="japan-region-map" aria-label="日本八大地區及沖繩訂單熱力地圖"></div>
-    </div>
-</section>
-
+@* ===== [統計字卡位置調整開始] 將原本位於地圖下方的統計字卡移到頁面上方 ===== *@
 <div class="row g-3 mb-4">
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
                 <div class="text-secondary small mb-2">總訂購件數</div>
                 <div id="total-order-quantity" class="fs-3 fw-bold">—</div>
-                <div class="small text-secondary mt-2">所有八大地區及沖繩的訂購件數</div>
             </div>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-secondary small mb-2">總銷售額</div>
+                <div class="text-secondary small mb-2">交易總額</div>
                 <div id="total-sales-amount" class="fs-3 fw-bold">—</div>
-                <div class="small text-secondary mt-2">訂購件數 × 商品單價</div>
             </div>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-secondary small mb-2">總訂單數</div>
+                <div class="text-secondary small mb-2">交易總筆數</div>
                 <div id="total-order-count" class="fs-3 fw-bold">—</div>
-                <div class="small text-secondary mt-2">同一訂單跨區時會各區各計一次</div>
             </div>
         </div>
     </div>
@@ -123,42 +232,95 @@
         </div>
     </div>
 </div>
+@* ===== [統計字卡位置調整結束] ===== *@
 
-<section class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3">
-        <h2 class="h5 mb-0">各地區統計</h2>
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+        <div>
+            <h2 class="h5 mb-1">日本八大地區及沖繩訂單熱力地圖</h2>
+            <p id="map-mode-description" class="small text-secondary mb-0">顏色深淺依地區交易筆數顯示；沖繩獨立統計。</p>
+        </div>
+        @* ===== [地圖顯示模式切換新增開始] ===== *@
+        <div class="d-flex flex-column align-items-md-end gap-2">
+            <div class="btn-group btn-group-sm map-mode-switch" role="group" aria-label="地圖顯示模式">
+                <button type="button" class="btn btn-primary" data-map-mode="heat" aria-pressed="true" disabled>
+                    <i class="bi bi-map me-1"></i>區域熱度
+                </button>
+                <button type="button" class="btn btn-outline-primary" data-map-mode="pulse" aria-pressed="false" disabled>
+                    <i class="bi bi-broadcast-pin me-1"></i>脈衝熱點
+                </button>
+            </div>
+            <div class="d-flex flex-wrap justify-content-md-end gap-3 small text-secondary">
+                <span id="analytics-period">資料期間：讀取中</span>
+                <span>點擊地區可查看商品種類總覽</span>
+            </div>
+        </div>
+        @* ===== [地圖顯示模式切換新增結束] ===== *@
     </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 analytics-table">
-            <colgroup>
-                <col style="width: 20%" />
-                <col style="width: 25%" />
-                <col style="width: 35%" />
-                <col style="width: 20%" />
-            </colgroup>
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">地區</th>
-                    <th scope="col" class="text-center">訂購件數</th>
-                    <th scope="col" class="text-center">銷售額</th>
-                    <th scope="col" class="text-center">訂單數</th>
-                </tr>
-            </thead>
-            <tbody id="region-statistics-body">
-                <tr>
-                    <td colspan="4" class="text-center text-secondary py-4">資料讀取中…</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="card-body p-0">
+        <div id="japan-region-map" aria-label="日本八大地區及沖繩訂單熱力地圖"></div>
     </div>
 </section>
 
-<section id="unclassified-card" class="card border-warning shadow-sm mt-4 d-none">
-    <div class="card-header bg-warning-subtle py-3">
-        <h2 class="h6 mb-0">待對照的商品所在地</h2>
+@* ===== [地圖視覺化版面調整] 原各地區統計表與下方資料清單已依需求移除 ===== *@
+
+@* ===== [地區商品種類視覺化總覽新增開始] 點擊地區後由右側開啟 ===== *@
+<aside class="offcanvas offcanvas-end region-summary-offcanvas" tabindex="-1" id="region-summary-panel"
+       aria-labelledby="region-summary-title">
+    <div class="offcanvas-header border-bottom">
+        <div>
+            <div class="small text-secondary mb-1">地區商品種類總覽</div>
+            <h2 class="offcanvas-title h4 mb-0" id="region-summary-title">請選擇地區</h2>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="關閉"></button>
     </div>
-    <div id="unclassified-location-list" class="list-group list-group-flush"></div>
-</section>
+    <div class="offcanvas-body">
+        <div class="row g-2 mb-4 text-center">
+            <div class="col-4">
+                <div class="border rounded-3 p-2 h-100">
+                    <div class="small text-secondary">件數</div>
+                    <div id="region-summary-quantity" class="fw-bold mt-1">—</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="border rounded-3 p-2 h-100">
+                    <div class="small text-secondary">銷售額</div>
+                    <div id="region-summary-sales" class="fw-bold mt-1">—</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="border rounded-3 p-2 h-100">
+                    <div class="small text-secondary">訂單數</div>
+                    <div id="region-summary-orders" class="fw-bold mt-1">—</div>
+                </div>
+            </div>
+        </div>
+
+        <section aria-labelledby="product-type-share-title" class="mb-4">
+            <h3 id="product-type-share-title" class="h6 mb-3">商品種類件數占比</h3>
+            <div id="product-type-empty" class="alert alert-light border text-secondary d-none mb-0">
+                此地區目前沒有商品種類資料。
+            </div>
+            <div id="product-type-chart-content">
+                <div id="product-type-donut" class="product-type-donut" role="img">
+                    <div class="product-type-donut-center">
+                        <div id="product-type-total" class="fs-4 fw-bold">—</div>
+                        <div class="small text-secondary">總件數</div>
+                    </div>
+                </div>
+                <div id="product-type-legend" class="d-grid gap-2 mt-4"></div>
+            </div>
+        </section>
+
+        @* ===== [地區熱門商品 Top 1 新增開始] ===== *@
+        <section aria-labelledby="top-product-title">
+            <h3 id="top-product-title" class="h6 mb-3">熱門商品 Top 1</h3>
+            <div id="top-product"></div>
+        </section>
+        @* ===== [地區熱門商品 Top 1 新增結束] ===== *@
+    </div>
+</aside>
+@* ===== [地區商品種類視覺化總覽新增結束] ===== *@
 
 @section Scripts {
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -196,10 +358,6 @@
                     prefectures.map(prefecture => [prefecture, region]))
             );
 
-            let map;
-            let mapLayer;
-            let legend;
-
             const labelPositions = {
                 '北海道': [43.4, 142.1],
                 '東北': [39.2, 140.8],
@@ -212,6 +370,35 @@
                 '沖繩': [26.4, 127.9]
             };
 
+            // ===== [地圖顯示模式與商品種類總覽新增開始] 集中管理設定與頁面狀態 =====
+            const mapModes = Object.freeze({
+                heat: 'heat',
+                pulse: 'pulse'
+            });
+
+            // 區域填色、脈衝圓點及圖例共用此分級，避免三處規則不一致。
+            const transactionHeatLevels = Object.freeze([
+                { label: '低熱度', maximumRatio: 0.2, color: '#fd8d3c', pulseSize: 20, legendSize: 8 },
+                { label: '中低熱度', maximumRatio: 0.4, color: '#fc4e2a', pulseSize: 30, legendSize: 11 },
+                { label: '中等熱度', maximumRatio: 0.6, color: '#e31a1c', pulseSize: 42, legendSize: 14 },
+                { label: '高熱度', maximumRatio: 0.8, color: '#bd0026', pulseSize: 54, legendSize: 17 },
+                { label: '最高熱度', maximumRatio: 1, color: '#800026', pulseSize: 68, legendSize: 20 }
+            ]);
+
+            const productTypeColors = [
+                '#0d6efd', '#dc3545', '#ffc107', '#198754', '#6f42c1',
+                '#fd7e14', '#20c997', '#d63384', '#6c757d'
+            ];
+
+            let analyticsData = { regions: [], periodStart: null, periodEnd: null };
+            let currentMapMode = mapModes.heat;
+            let japanGeoJson;
+            let map;
+            let mapLayer;
+            let legend;
+            let hasFittedMapBounds = false;
+            // ===== [地圖顯示模式與商品種類總覽新增結束] =====
+
             const getRegionFromFeature = (feature) => {
                 const properties = feature?.properties ?? {};
                 return prefectureToRegion.get(properties.name)
@@ -219,187 +406,507 @@
                     ?? null;
             };
 
-            const getColor = (quantity, maximum) => {
-                if (!quantity) return '#e9ecef';
+            // ===== [地圖熱度計算指標調整開始] 改以各地區交易筆數決定熱度 =====
+            const getTransactionHeatLevel = (transactionCount, maximumTransactionCount) => {
+                if (!transactionCount || !maximumTransactionCount) return null;
 
-                const ratio = quantity / maximum;
-                if (ratio > 0.8) return '#800026';
-                if (ratio > 0.6) return '#bd0026';
-                if (ratio > 0.4) return '#e31a1c';
-                if (ratio > 0.2) return '#fc4e2a';
-                return '#fd8d3c';
+                const ratio = transactionCount / maximumTransactionCount;
+                return transactionHeatLevels.find(level => ratio <= level.maximumRatio)
+                    ?? transactionHeatLevels.at(-1);
             };
 
-            const updateLegend = (maximum) => {
-                if (!legend) {
-                    legend = L.control({ position: 'bottomright' });
-                    legend.onAdd = () => {
-                        const div = L.DomUtil.create('div', 'map-legend');
-                        div.id = 'map-legend-content';
-                        return div;
-                    };
-                    legend.addTo(map);
-                }
-
-                const unit = Math.max(1, Math.ceil(maximum / 5));
-                document.getElementById('map-legend-content').innerHTML = `
-                    <strong>訂購件數</strong><br>
-                    <i style="background:#e9ecef"></i>0 件<br>
-                    <i style="background:#fd8d3c"></i>1–${numberFormatter.format(unit)} 件<br>
-                    <i style="background:#e31a1c"></i>${numberFormatter.format(unit + 1)}–${numberFormatter.format(unit * 3)} 件<br>
-                    <i style="background:#800026"></i>${numberFormatter.format(unit * 3 + 1)} 件以上`;
+            const getHeatColor = (transactionCount, maximumTransactionCount) => {
+                const heatLevel = getTransactionHeatLevel(
+                    transactionCount,
+                    maximumTransactionCount
+                );
+                return heatLevel?.color ?? '#e9ecef';
             };
 
-            const getRegionStyle = (region, maximum, isHighlighted = false) => ({
+            const getHeatRegionStyle = (region, maximumTransactionCount, isHighlighted = false) => ({
                 color: isHighlighted ? '#111827' : '#343a40',
-                fillColor: getColor(Number(region?.orderQuantity ?? 0), maximum),
+                fillColor: getHeatColor(Number(region?.orderCount ?? 0), maximumTransactionCount),
                 fillOpacity: isHighlighted ? 0.96 : 0.82,
                 opacity: 1,
                 weight: isHighlighted ? 2.2 : 1.1
             });
 
-            const setGroupStyle = (group, region, maximum, isHighlighted) => {
-                group.eachLayer(layer => layer.setStyle(getRegionStyle(region, maximum, isHighlighted)));
-            };
+            const getPulseRegionStyle = (isHighlighted = false) => ({
+                color: isHighlighted ? '#111827' : '#6c757d',
+                fillColor: '#f8f9fa',
+                fillOpacity: isHighlighted ? 0.28 : 0.08,
+                opacity: 1,
+                weight: isHighlighted ? 2.2 : 1
+            });
 
-            const getRegionPopup = (regionName, region) => `
+            const getRegionStyle = (region, maximumTransactionCount, isHighlighted = false) =>
+                currentMapMode === mapModes.heat
+                    ? getHeatRegionStyle(region, maximumTransactionCount, isHighlighted)
+                    : getPulseRegionStyle(isHighlighted);
+
+            const setGroupStyle = (group, region, maximumTransactionCount, isHighlighted) => {
+                group.eachLayer(layer =>
+                    layer.setStyle(getRegionStyle(region, maximumTransactionCount, isHighlighted))
+                );
+            };
+            // ===== [地圖熱度計算指標調整結束] =====
+
+            const getRegionTooltip = (regionName, region) => `
                 <div class="text-center">
                     <strong>${escapeHtml(regionName)}</strong><br>
                     訂購件數：${numberFormatter.format(region?.orderQuantity ?? 0)} 件<br>
                     銷售額：${currencyFormatter.format(region?.salesAmount ?? 0)}<br>
-                    訂單數：${numberFormatter.format(region?.orderCount ?? 0)} 筆
+                    訂單數：${numberFormatter.format(region?.orderCount ?? 0)} 筆<br>
+                    <span class="text-primary">點擊查看商品種類</span>
                 </div>`;
 
-            const renderMap = async (data) => {
-                if (typeof L === 'undefined') {
+            const ensureLegend = () => {
+                if (legend) return;
+
+                legend = L.control({ position: 'bottomright' });
+                legend.onAdd = () => {
+                    const container = L.DomUtil.create('div', 'map-legend');
+                    container.id = 'map-legend-content';
+                    return container;
+                };
+                legend.addTo(map);
+            };
+
+            const getTransactionHeatLegendItems = (maximumTransactionCount) => {
+                if (!maximumTransactionCount) return [];
+
+                return transactionHeatLevels
+                    .map((level, index) => {
+                        const previousRatio = index === 0
+                            ? 0
+                            : transactionHeatLevels[index - 1].maximumRatio;
+                        const minimum = Math.floor(maximumTransactionCount * previousRatio) + 1;
+                        const maximum = level.maximumRatio === 1
+                            ? maximumTransactionCount
+                            : Math.floor(maximumTransactionCount * level.maximumRatio);
+
+                        return { ...level, minimum, maximum };
+                    })
+                    .filter(level => level.minimum <= level.maximum);
+            };
+
+            const formatTransactionRange = (minimum, maximum) =>
+                minimum === maximum
+                    ? `${numberFormatter.format(minimum)} 筆`
+                    : `${numberFormatter.format(minimum)}～${numberFormatter.format(maximum)} 筆`;
+
+            const renderHeatLegendRows = (legendItems) => legendItems.map(level => `
+                <div class="map-legend-row">
+                    <i style="background:${level.color}"></i>
+                    <span>${level.label} ${formatTransactionRange(level.minimum, level.maximum)}</span>
+                </div>`).join('');
+
+            const renderPulseLegendRows = (legendItems) => legendItems.map(level => `
+                <div class="map-legend-row">
+                    <span class="pulse-legend-sample" style="--legend-pulse-size:${level.legendSize}px"></span>
+                    <span>${level.label} ${formatTransactionRange(level.minimum, level.maximum)}</span>
+                </div>`).join('');
+
+            const updateLegend = (maximumTransactionCount) => {
+                ensureLegend();
+                const legendContent = document.getElementById('map-legend-content');
+                const legendItems = getTransactionHeatLegendItems(maximumTransactionCount);
+                const noTransactionsHeatRow = `
+                    <div class="map-legend-row">
+                        <i style="background:#e9ecef"></i><span>無交易</span>
+                    </div>`;
+                const noTransactionsPulseRow = `
+                    <div class="map-legend-row">
+                        <span class="pulse-legend-sample" style="--legend-pulse-size:6px;background:#adb5bd"></span>
+                        <span>無交易</span>
+                    </div>`;
+
+                if (currentMapMode === mapModes.pulse) {
+                    legendContent.innerHTML = `
+                        <strong>脈衝熱點</strong><br>
+                        <span class="text-secondary">圓點越大，交易筆數越多</span>
+                        ${noTransactionsPulseRow}
+                        ${renderPulseLegendRows(legendItems)}`;
                     return;
                 }
 
-                const statisticsByRegion = new Map((data.regions ?? []).map(region => [region.region, region]));
-                const maximumQuantity = Math.max(1, ...[...statisticsByRegion.values()].map(region => Number(region.orderQuantity ?? 0)));
+                legendContent.innerHTML = `
+                    <strong>區域交易熱度</strong>
+                    ${noTransactionsHeatRow}
+                    ${renderHeatLegendRows(legendItems)}`;
+            };
 
-                if (!map) {
-                    map = L.map('japan-region-map', {
-                        minZoom: 3,
-                        scrollWheelZoom: false,
-                        zoomControl: true
-                    });
+            // ===== [地區商品種類視覺化總覽新增開始] =====
+            // ===== [商品種類資料整理精簡開始] 件數、占比與顏色只計算一次 =====
+            const prepareProductTypes = (productTypes) => {
+                const sortedProductTypes = [...(productTypes ?? [])]
+                    .sort((left, right) =>
+                        Number(right.orderQuantity ?? 0) - Number(left.orderQuantity ?? 0)
+                    );
+                const totalQuantity = sortedProductTypes.reduce(
+                    (sum, item) => sum + Number(item.orderQuantity ?? 0),
+                    0
+                );
+
+                const items = sortedProductTypes.map((item, index) => {
+                    const quantity = Number(item.orderQuantity ?? 0);
+
+                    return {
+                        productType: item.productType,
+                        quantity,
+                        percentage: totalQuantity ? quantity / totalQuantity * 100 : 0,
+                        color: productTypeColors[index % productTypeColors.length]
+                    };
+                });
+
+                return { items, totalQuantity };
+            };
+            // ===== [商品種類資料整理精簡結束] =====
+
+            const buildDonutGradient = (productTypes) => {
+                let accumulatedPercentage = 0;
+
+                return productTypes.map(item => {
+                    const startPercentage = accumulatedPercentage;
+                    accumulatedPercentage += item.percentage;
+                    return `${item.color} ${startPercentage}% ${accumulatedPercentage}%`;
+                }).join(', ');
+            };
+
+            const renderProductTypeLegend = (productTypes) => {
+                const legendContainer = document.getElementById('product-type-legend');
+
+                legendContainer.innerHTML = productTypes.map(item => `
+                        <div class="d-flex align-items-center justify-content-between gap-3">
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="product-type-legend-dot" style="background:${item.color}"></span>
+                                <span>${escapeHtml(item.productType)}</span>
+                            </span>
+                            <span class="text-secondary text-nowrap">
+                                ${numberFormatter.format(item.quantity)} 件 · ${item.percentage.toFixed(1)}%
+                            </span>
+                        </div>`).join('');
+            };
+
+            // ===== [地區熱門商品 Top 1 新增開始] =====
+            const getSafeImageUrl = (imageUrl) => {
+                if (!imageUrl) return null;
+
+                try {
+                    const parsedUrl = new URL(imageUrl, window.location.origin);
+                    return ['http:', 'https:'].includes(parsedUrl.protocol)
+                        ? parsedUrl.href
+                        : null;
+                } catch {
+                    return null;
                 }
+            };
+
+            const renderTopProduct = (topProduct, regionTotalQuantity) => {
+                const container = document.getElementById('top-product');
+
+                if (!topProduct) {
+                    container.innerHTML = '<div class="text-secondary">此地區目前沒有熱門商品資料。</div>';
+                    return;
+                }
+
+                const quantity = Number(topProduct.orderQuantity ?? 0);
+                const percentage = regionTotalQuantity
+                    ? quantity / regionTotalQuantity * 100
+                    : 0;
+
+                container.innerHTML = `
+                    <article class="card border bg-light overflow-hidden">
+                        <div id="top-product-image-frame" class="ratio ratio-4x3 bg-white border-bottom">
+                            <div class="d-flex flex-column align-items-center justify-content-center text-secondary">
+                                <i class="bi bi-image fs-1"></i>
+                                <span class="small mt-2">暫無商品圖片</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <span class="badge text-bg-dark mb-2">TOP 1</span>
+                            <h4 class="h6 fw-bold mb-3">${escapeHtml(topProduct.productName)}</h4>
+                            <div class="d-flex align-items-end justify-content-between gap-3">
+                                <div>
+                                    <div class="small text-secondary">銷售件數</div>
+                                    <div class="fs-4 fw-bold">${numberFormatter.format(quantity)} 件</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="small text-secondary">地區占比</div>
+                                    <div class="fw-semibold">${percentage.toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>`;
+
+                const safeImageUrl = getSafeImageUrl(topProduct.imageUrl);
+                if (!safeImageUrl) return;
+
+                const image = document.createElement('img');
+                image.className = 'w-100 h-100 object-fit-contain bg-white';
+                image.alt = topProduct.productName ?? '熱門商品圖片';
+                image.addEventListener('error', () => image.remove(), { once: true });
+                image.src = safeImageUrl;
+                document.getElementById('top-product-image-frame').append(image);
+            };
+            // ===== [地區熱門商品 Top 1 新增結束] =====
+
+            const renderRegionSummary = (regionName, region) => {
+                const { items: productTypes, totalQuantity } = prepareProductTypes(
+                    region?.productTypes
+                );
+
+                document.getElementById('region-summary-title').textContent = regionName;
+                document.getElementById('region-summary-quantity').textContent =
+                    `${numberFormatter.format(region?.orderQuantity ?? 0)} 件`;
+                document.getElementById('region-summary-sales').textContent =
+                    currencyFormatter.format(region?.salesAmount ?? 0);
+                document.getElementById('region-summary-orders').textContent =
+                    `${numberFormatter.format(region?.orderCount ?? 0)} 筆`;
+
+                const emptyMessage = document.getElementById('product-type-empty');
+                const chartContent = document.getElementById('product-type-chart-content');
+                renderTopProduct(region?.topProduct, Number(region?.orderQuantity ?? 0));
+
+                if (!totalQuantity) {
+                    emptyMessage.classList.remove('d-none');
+                    chartContent.classList.add('d-none');
+                    return;
+                }
+
+                emptyMessage.classList.add('d-none');
+                chartContent.classList.remove('d-none');
+
+                const donut = document.getElementById('product-type-donut');
+                donut.style.background = `conic-gradient(${buildDonutGradient(productTypes)})`;
+                donut.setAttribute(
+                    'aria-label',
+                    `${regionName}商品種類件數占比，共${numberFormatter.format(totalQuantity)}件`
+                );
+
+                document.getElementById('product-type-total').textContent = numberFormatter.format(totalQuantity);
+                renderProductTypeLegend(productTypes);
+            };
+
+            const openRegionSummary = (regionName, region) => {
+                renderRegionSummary(regionName, region);
+                bootstrap.Offcanvas.getOrCreateInstance(
+                    document.getElementById('region-summary-panel')
+                ).show();
+            };
+            // ===== [地區商品種類視覺化總覽新增結束] =====
+
+            // ===== [脈衝熱點地圖新增開始] =====
+            const calculatePulseSize = (transactionCount, maximumTransactionCount) => {
+                const heatLevel = getTransactionHeatLevel(
+                    transactionCount,
+                    maximumTransactionCount
+                );
+                return heatLevel?.pulseSize ?? 12;
+            };
+
+            const createPulseMarker = (regionName, region, maximumTransactionCount) => {
+                const transactionCount = Number(region?.orderCount ?? 0);
+                const markerSize = calculatePulseSize(transactionCount, maximumTransactionCount);
+                const emptyMarkerClass = transactionCount ? '' : ' is-empty';
+
+                return L.marker(labelPositions[regionName], {
+                    icon: L.divIcon({
+                        className: 'region-pulse-icon',
+                        html: `
+                            <div class="region-pulse-dot${emptyMarkerClass}" style="--pulse-size:${markerSize}px">
+                                <span class="region-pulse-name">${escapeHtml(regionName)}</span>
+                            </div>`,
+                        iconAnchor: [markerSize / 2, markerSize / 2],
+                        iconSize: [markerSize, markerSize]
+                    }),
+                    keyboard: true,
+                    title: `${regionName}：${numberFormatter.format(transactionCount)} 筆`
+                });
+            };
+            // ===== [脈衝熱點地圖新增結束] =====
+
+            const loadJapanGeoJson = async () => {
+                if (japanGeoJson) return japanGeoJson;
+
+                const response = await fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/japan.geojson');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                japanGeoJson = await response.json();
+                return japanGeoJson;
+            };
+
+            const initializeMap = () => {
+                if (map) return;
+
+                map = L.map('japan-region-map', {
+                    minZoom: 3,
+                    scrollWheelZoom: false,
+                    zoomControl: true
+                });
+            };
+
+            const addRegionLabel = (regionName) => {
+                const label = L.marker(labelPositions[regionName], {
+                    icon: L.divIcon({
+                        className: 'region-map-label',
+                        html: escapeHtml(regionName),
+                        iconAnchor: [0, 0]
+                    }),
+                    interactive: false
+                });
+                mapLayer.addLayer(label);
+            };
+
+            const renderMap = async (data) => {
+                if (typeof L === 'undefined') {
+                    throw new Error('Leaflet 尚未載入');
+                }
+
+                initializeMap();
+
+                const statisticsByRegion = new Map(
+                    (data.regions ?? []).map(region => [region.region, region])
+                );
+                const maximumTransactionCount = Math.max(
+                    1,
+                    ...[...statisticsByRegion.values()].map(region => Number(region.orderCount ?? 0))
+                );
+                const geoJson = await loadJapanGeoJson();
 
                 if (mapLayer) {
                     map.removeLayer(mapLayer);
                 }
 
-                try {
-                    const response = await fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/japan.geojson');
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
+                const groupsByRegion = new Map(
+                    [...statisticsByRegion.keys()].map(regionName => [regionName, L.featureGroup()])
+                );
+                mapLayer = L.featureGroup().addTo(map);
+
+                geoJson.features.forEach(feature => {
+                    const regionName = getRegionFromFeature(feature);
+                    const group = groupsByRegion.get(regionName);
+                    if (!group) return;
+
+                    const region = statisticsByRegion.get(regionName);
+                    group.addLayer(L.geoJson(feature, {
+                        style: getRegionStyle(region, maximumTransactionCount)
+                    }));
+                });
+
+                groupsByRegion.forEach((group, regionName) => {
+                    const region = statisticsByRegion.get(regionName);
+
+                    group.bindTooltip(getRegionTooltip(regionName, region), { sticky: true });
+                    group.on({
+                        mouseover: () => setGroupStyle(group, region, maximumTransactionCount, true),
+                        mouseout: () => setGroupStyle(group, region, maximumTransactionCount, false),
+                        click: () => openRegionSummary(regionName, region)
+                    });
+                    mapLayer.addLayer(group);
+
+                    if (currentMapMode === mapModes.heat) {
+                        addRegionLabel(regionName);
+                        return;
                     }
 
-                    const geoJson = await response.json();
-                    const groupsByRegion = new Map(
-                        [...statisticsByRegion.keys()].map(regionName => [regionName, L.featureGroup()])
-                    );
-                    mapLayer = L.featureGroup().addTo(map);
+                    const pulseMarker = createPulseMarker(regionName, region, maximumTransactionCount);
+                    pulseMarker.bindTooltip(getRegionTooltip(regionName, region), { direction: 'top' });
+                    pulseMarker.on('click', () => openRegionSummary(regionName, region));
+                    mapLayer.addLayer(pulseMarker);
+                });
 
-                    geoJson.features.forEach(feature => {
-                        const regionName = getRegionFromFeature(feature);
-                        const group = groupsByRegion.get(regionName);
-
-                        if (!group) {
-                            return;
-                        }
-
-                        const region = statisticsByRegion.get(regionName);
-                        const prefectureLayer = L.geoJson(feature, {
-                            style: getRegionStyle(region, maximumQuantity)
-                        });
-                        group.addLayer(prefectureLayer);
-                    });
-
-                    groupsByRegion.forEach((group, regionName) => {
-                        const region = statisticsByRegion.get(regionName);
-
-                        group.on({
-                            mouseover: () => setGroupStyle(group, region, maximumQuantity, true),
-                            mouseout: () => setGroupStyle(group, region, maximumQuantity, false),
-                            click: event => L.popup()
-                                .setLatLng(event.latlng)
-                                .setContent(getRegionPopup(regionName, region))
-                                .openOn(map)
-                        });
-
-                        mapLayer.addLayer(group);
-
-                        const labelPosition = labelPositions[regionName];
-                        if (labelPosition) {
-                            const label = L.marker(labelPosition, {
-                                icon: L.divIcon({
-                                    className: 'region-map-label',
-                                    html: escapeHtml(regionName),
-                                    iconAnchor: [0, 0]
-                                }),
-                                interactive: false
-                            });
-                            mapLayer.addLayer(label);
-                        }
-                    });
-
+                if (!hasFittedMapBounds) {
                     map.fitBounds(mapLayer.getBounds(), { padding: [24, 24] });
-                    updateLegend(maximumQuantity);
-                } catch {
-                    document.getElementById('japan-region-map').innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center text-secondary">日本地圖資料讀取失敗，請確認網路連線後重新整理。</div>';
+                    hasFittedMapBounds = true;
                 }
+
+                updateLegend(maximumTransactionCount);
             };
+
+            // ===== [地圖顯示模式切換新增開始] =====
+            const updateMapModeControls = () => {
+                document.querySelectorAll('[data-map-mode]').forEach(button => {
+                    const isActive = button.dataset.mapMode === currentMapMode;
+                    button.classList.toggle('btn-primary', isActive);
+                    button.classList.toggle('btn-outline-primary', !isActive);
+                    button.setAttribute('aria-pressed', String(isActive));
+                });
+
+                const isPulseMode = currentMapMode === mapModes.pulse;
+                document.getElementById('map-mode-description').textContent = isPulseMode
+                    ? '圓點大小依地區交易筆數顯示；地圖底色不代表熱度。'
+                    : '顏色深淺依地區交易筆數顯示；沖繩獨立統計。';
+            };
+
+            const changeMapMode = async (nextMode) => {
+                if (!Object.values(mapModes).includes(nextMode) || nextMode === currentMapMode) return;
+
+                currentMapMode = nextMode;
+                updateMapModeControls();
+                await renderMap(analyticsData);
+            };
+
+            const initializeMapControls = () => {
+                document.querySelectorAll('[data-map-mode]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        changeMapMode(button.dataset.mapMode)
+                            .catch(() => showError('地圖顯示模式切換失敗，請重新整理後再試。'));
+                    });
+                });
+            };
+            // ===== [地圖顯示模式切換新增結束] =====
 
             const showError = (message) => {
                 document.getElementById('analytics-error').textContent = message;
                 document.getElementById('analytics-error').classList.remove('d-none');
+
                 const status = document.getElementById('analytics-status');
                 status.textContent = '資料讀取失敗';
                 status.className = 'badge text-bg-danger px-3 py-2';
             };
 
             const renderAnalytics = (data) => {
+                analyticsData = data;
+                document.querySelectorAll('[data-map-mode]').forEach(button => {
+                    button.disabled = false;
+                });
+
                 const regions = data.regions ?? [];
-                const trends = data.monthlyTrend ?? [];
-                const unclassified = data.unclassifiedLocations ?? [];
+                const totalQuantity = regions.reduce(
+                    (sum, region) => sum + Number(region.orderQuantity ?? 0),
+                    0
+                );
+                const totalSales = regions.reduce(
+                    (sum, region) => sum + Number(region.salesAmount ?? 0),
+                    0
+                );
+                const totalOrders = regions.reduce(
+                    (sum, region) => sum + Number(region.orderCount ?? 0),
+                    0
+                );
 
-                const totalQuantity = regions.reduce((sum, region) => sum + Number(region.orderQuantity ?? 0), 0);
-                const totalSales = regions.reduce((sum, region) => sum + Number(region.salesAmount ?? 0), 0);
-                const totalOrders = regions.reduce((sum, region) => sum + Number(region.orderCount ?? 0), 0);
-                const periodMonths = [...new Set(trends.map(trend => trend.month))].sort();
-
-                document.getElementById('total-order-quantity').textContent = numberFormatter.format(totalQuantity) + ' 件';
-                document.getElementById('total-sales-amount').textContent = currencyFormatter.format(totalSales);
-                document.getElementById('total-order-count').textContent = numberFormatter.format(totalOrders) + ' 筆';
-                document.getElementById('analytics-period').textContent = periodMonths.length
-                    ? `資料期間：${periodMonths[0]} ～ ${periodMonths[periodMonths.length - 1]}`
+                document.getElementById('total-order-quantity').textContent =
+                    `${numberFormatter.format(totalQuantity)} 件`;
+                document.getElementById('total-sales-amount').textContent =
+                    currencyFormatter.format(totalSales);
+                document.getElementById('total-order-count').textContent =
+                    `${numberFormatter.format(totalOrders)} 筆`;
+                document.getElementById('analytics-period').textContent = data.periodStart && data.periodEnd
+                    ? `資料期間：${data.periodStart} ～ ${data.periodEnd}`
                     : '資料期間：尚無訂單資料';
-
-                document.getElementById('region-statistics-body').innerHTML = regions.map(region => `
-                    <tr>
-                        <th scope="row">${escapeHtml(region.region)}</th>
-                        <td class="text-center">${numberFormatter.format(region.orderQuantity ?? 0)} 件</td>
-                        <td class="text-center">${currencyFormatter.format(region.salesAmount ?? 0)}</td>
-                        <td class="text-center">${numberFormatter.format(region.orderCount ?? 0)} 筆</td>
-                    </tr>`).join('');
-
-                if (unclassified.length) {
-                    document.getElementById('unclassified-card').classList.remove('d-none');
-                    document.getElementById('unclassified-location-list').innerHTML = unclassified.map(item => `
-                        <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                            <span>${escapeHtml(item.location)}</span>
-                            <span class="badge text-bg-warning">${numberFormatter.format(item.orderQuantity ?? 0)} 件</span>
-                        </div>`).join('');
-                }
 
                 const status = document.getElementById('analytics-status');
                 status.textContent = '已更新';
                 status.className = 'badge text-bg-success px-3 py-2';
 
-                renderMap(data);
+                renderMap(data)
+                    .catch(() => showError('日本地圖資料讀取失敗，請確認網路連線後重新整理。'));
             };
+
+            initializeMapControls();
 
             fetch('@Url.Action("GetRegionOrderAnalytics", "RegionAnalytics")')
                 .then(response => {
