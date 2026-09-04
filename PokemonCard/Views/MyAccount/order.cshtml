@@ -143,9 +143,18 @@
 
                         </div>
 
-                        <span class="text-primary">
-                            @PokemonCard.Helpers.OrderStatus.GetText(order.OrderStatus)
-                        </span>
+                        <div class="d-flex align-items-center">
+
+                            <span class="text-muted me-4">
+                                下單時間：
+                                @order.OrderedAt.ToString("yyyy/MM/dd HH:mm")
+                            </span>
+
+                            <span class="text-primary">
+                                @PokemonCard.Helpers.OrderStatus.GetText(order.OrderStatus)
+                            </span>
+
+                        </div>
 
                     </div>
 

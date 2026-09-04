@@ -39,6 +39,8 @@ namespace PokemonCard. Controllers
                     . ThenInclude(oi => oi. Product)
                         . ThenInclude(p => p. ProductImages)
                 . Where(o => o. BuyerId == userId)
+                        . OrderByDescending(o => o. OrderedAt)  // 最新訂單在最上面
+
                 . ToList( );
 
             // 建立 ViewModel
