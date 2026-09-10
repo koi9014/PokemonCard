@@ -571,27 +571,13 @@ namespace PokemonCard.Controllers
         }
         // ===== [賣家審核新增結束] =====
 
-        // ===== [違禁字庫管理新增開始] 違禁字列表與搜尋 =====
-        public async Task<IActionResult> BannedWords(string? keyword, string status = "all")
+        // ===== [違禁字庫管理新增開始] 違禁字列表 =====
+        public async Task<IActionResult> BannedWords()
         {
             var query = _context.BannedWords
                 .Include(bannedWord => bannedWord.Admin)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                query = query.Where(bannedWord => bannedWord.BannedWords.Contains(keyword));
-            }
-
-            query = status switch
-            {
-                "enabled" => query.Where(bannedWord => bannedWord.IsEnabled),
-                "disabled" => query.Where(bannedWord => !bannedWord.IsEnabled),
-                _ => query
-            };
-
-            ViewBag.Keyword = keyword;
-            ViewBag.Status = status;
             ViewBag.EnabledCount = await _context.BannedWords.CountAsync(bannedWord => bannedWord.IsEnabled);
             ViewBag.DisabledCount = await _context.BannedWords.CountAsync(bannedWord => !bannedWord.IsEnabled);
 
