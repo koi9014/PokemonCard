@@ -2,7 +2,12 @@
 Layout = "_Layout";
 var memberModel = ViewData.Model as MemberCenterViewModel;
 var isSeller = memberModel?.IsSeller ?? (ViewData["IsSeller"] is bool sellerValue && sellerValue);
-var navigationModel = memberModel ?? new MemberCenterViewModel { IsSeller = isSeller };
+var canCreateStore = memberModel?.CanCreateStore ?? (ViewData["CanCreateStore"] is bool canCreateValue && canCreateValue);
+var navigationModel = memberModel ?? new MemberCenterViewModel
+{
+    IsSeller = isSeller,
+    CanCreateStore = canCreateStore
+};
 }
 @using PokemonCard.ViewModels
 
