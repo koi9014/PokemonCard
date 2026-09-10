@@ -1,6 +1,6 @@
 ![PiCartChu Logo](./docs/assets/logo.png)
 
-# PiCartChu 寶可夢卡牌交易平台
+# PiCartChu 日本寶可夢代購平台
 
 使用 ASP.NET Core MVC 製作的收藏卡牌電商平台，串連買家、賣家與管理員三種角色，實作從商品瀏覽、購物車、下單到後台管理的基本交易流程。
 
@@ -127,7 +127,6 @@ dotnet build PokemonCard.slnx
 dotnet run --project PokemonCard/PokemonCard.csproj --launch-profile https
 ```
 
-啟動後開啟 <https://localhost:7127>。
 
 ## 常用頁面
 
