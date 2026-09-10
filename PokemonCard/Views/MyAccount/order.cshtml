@@ -163,62 +163,72 @@
                  這一筆 Order 的所有商品
             =============================== -->
                     <div class="card-body">
+                       @foreach (var group in order.OrderItems.GroupBy(x => new
+{
+                                x.ProductId,
+                                x.ProductSpec,
+                                x.ProductSpec2,
+                                x.UnitPrice
+                            }))
+                            {
+                                var orderItem = group.First();
+                                var totalQuantity = group.Sum(x => x.Quantity);
+                                var subtotal = orderItem.UnitPrice * totalQuantity;
 
-                        @foreach(var item in order.OrderItems)
-                        {
-                            <div class="row align-items-center mb-3 pb-3 border-bottom">
+                                <div class="row align-items-center mb-3 pb-3 border-bottom">
 
-                                <!-- 商品圖片 -->
-                                <div class="col-md-3">
+                                    <!-- 商品圖片 -->
+                                    <div class="col-md-3">
 
-                                    <img src="@item.Product?.ProductImages.FirstOrDefault( )?.ImageUrl"
-                                         width="150"
-                                         height="150"
-                                         alt="@item.ProductName"
-                                         class="img-fluid">
+                                        <img src="@orderItem.Product?.ProductImages.FirstOrDefault()?.ImageUrl"
+                                        width="150"
+                                        height="150"
+                                             alt="@orderItem.ProductName"
+                                        class="img-fluid">
+
+                                    </div>
+
+
+                                    <!-- 商品資訊 -->
+                                    <div class="col-md-9">
+
+                                        <h5>
+                                            @orderItem.ProductName
+                                        </h5>
+
+                                        @if (!string.IsNullOrEmpty(orderItem.ProductSpec))
+                                        {
+                                            <p class="text-muted">
+                                                規格：@orderItem.ProductSpec
+                                            </p>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(orderItem.ProductSpec2))
+                                        {
+                                            <p class="text-muted">
+                                                @orderItem.ProductSpec2
+                                            </p>
+                                        }
+
+                                        <p>
+                                            數量：@totalQuantity
+                                        </p>
+
+                                        <p>
+                                            單價：
+                                            NT$ @orderItem.UnitPrice.ToString("N0")
+                                        </p>
+
+                                        <p class="fw-bold text-danger">
+                                            小計：
+                                            NT$ @subtotal.ToString("N0")
+                                        </p>
+
+                                    </div>
 
                                 </div>
-
-
-                                <!-- 商品資訊 -->
-                                <div class="col-md-9">
-
-                                    <h5>
-                                        @item.ProductName
-                                    </h5>
-
-                                    @if(!string.IsNullOrEmpty(item.ProductSpec))
-                                    {
-                                        <p class="text-muted">
-                                            規格：@item.ProductSpec
-                                        </p>
-                                    }
-
-                                    @if(!string.IsNullOrEmpty(item.ProductSpec2))
-                                    {
-                                        <p class="text-muted">
-                                            @item.ProductSpec2
-                                        </p>
-                                    }
-
-                                    <p>
-                                        數量：@item.Quantity
-                                    </p>
-
-                                    <p>
-                                        單價：
-                                        NT$ @item.UnitPrice.ToString("N0")
-                                    </p>
-
-                                    <p class="fw-bold text-danger">
-                                        小計：
-                                        NT$ @((item.UnitPrice * item.Quantity).ToString("N0"))
-                                    </p>
-
-                                </div>
-
-                            </div>
-                        }
+                            }
+                        
 
 
                         <!-- ==============================

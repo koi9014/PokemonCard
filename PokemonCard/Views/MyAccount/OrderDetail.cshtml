@@ -485,8 +485,17 @@
             </div>
 
 
-            @foreach(var item in Model.OrderItems)
+            @foreach (var group in Model.OrderItems.GroupBy(x => new
             {
+                x.ProductId,
+                x.ProductSpec,
+                x.ProductSpec2,
+                x.UnitPrice
+            }))
+            {
+                var item = group.First();
+                var totalQuantity = group.Sum(x => x.Quantity);
+                var subtotal = item.UnitPrice * totalQuantity;
 
                 <div class="row align-items-center py-3 border-bottom">
 
@@ -552,7 +561,7 @@
                         </div>
 
                         <div class="fw-semibold">
-                            @item.Quantity
+                            @totalQuantity
                         </div>
 
                     </div>
@@ -587,7 +596,7 @@
 
                         <div class="fw-bold text-danger">
 
-                            NT$ @((item.UnitPrice * item.Quantity).ToString("N0"))
+                            NT$ @subtotal.ToString("N0")
 
                         </div>
 
@@ -597,9 +606,8 @@
                 </div>
 
             }
-
+            
         </div>
-
 
 
         <!-- ==================== -->

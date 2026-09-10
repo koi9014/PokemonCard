@@ -567,6 +567,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
 
         if (seller is not null)
         {
+            ViewData["IsSeller"] = true;
             return View(new StoreSettingInput
             {
                 StoreName = seller.StoreName,
@@ -582,6 +583,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         if (approvedUser is null) return Forbid();
 
         ViewData["IsSeller"] = false;
+        ViewData["CanCreateStore"] = true;
         return View(new StoreSettingInput
         {
             IsCreate = true,
