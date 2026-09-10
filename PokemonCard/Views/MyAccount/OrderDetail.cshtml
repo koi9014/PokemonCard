@@ -679,8 +679,7 @@
 
                         <span class="fw-bold fs-5 text-danger">
 
-                            NT$ @Model.OrderAmount.ToString("N0")
-
+                            NT$ @((Model.ShipAmount + Model.OrderAmount).ToString("N0"))
                         </span>
 
                     </div>
