@@ -113,6 +113,7 @@ public class SellerDashboardViewModel
     public int TodayNewOrders { get; set; }
     public decimal TotalSales { get; set; }
     public int TotalOrders { get; set; }
+   public int ShipAmount { get; set; }
     public decimal AvgOrderValue { get; set; }
     public decimal MonthlyCreditedAmount { get; set; }
     public int PendingShipments { get; set; }

@@ -79,11 +79,11 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         var salesOrders = orders.Where(order => order.OrderStatus.ToUpper() != "CANCELLED");
 
         var totalOrders = await orders.CountAsync();
-        var totalSales = await salesOrders.SumAsync(order => (decimal?)order.OrderAmount) ?? 0;
+        var totalSales = await salesOrders.SumAsync(order => (decimal?)(order.OrderAmount+order.ShipAmount)) ?? 0;
         var monthlySales = await salesOrders
             .Where(order => order.OrderedAt.Year == year)
             .GroupBy(order => order.OrderedAt.Month)
-            .Select(group => new { group.Key, Total = group.Sum(order => (decimal)order.OrderAmount) })
+            .Select(group => new { group.Key, Total = group.Sum(order => (decimal)(order.OrderAmount+order.ShipAmount)) })
             .ToDictionaryAsync(group => group.Key, group => group.Total);
         var chartData = Enumerable.Range(1, 12)
             .Select(month => monthlySales.GetValueOrDefault(month))
@@ -121,7 +121,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                     FirstProductName = order.OrderItems
                         .Select(item => item.Product == null ? null : item.Product.ProductName)
                         .FirstOrDefault() ?? "無商品名稱",
-                    OrderAmount = order.OrderAmount,
+                    OrderAmount = (order.OrderAmount+order.ShipAmount),
                     OrderStatus = order.OrderStatus
                 })
                 .ToListAsync()
@@ -159,6 +159,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         }
 
         const int pageSize = 10;
+        const int shipAmount = 60;
         var totalCount = await orders.CountAsync();
         page = Math.Clamp(page, 1, Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize)));
 
@@ -168,6 +169,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             Status = status,
             Page = page,
             PageSize = pageSize,
+            ShipAmount = shipAmount,
             TotalCount = totalCount,
             Items = await orders
                 .OrderByDescending(order => order.OrderedAt)
@@ -180,7 +182,8 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
                     Username = order.Buyer.Username ?? "-",
                     OrderAmount = order.OrderAmount,
                     OrderStatus = order.OrderStatus,
-                    OrderedAt = order.OrderedAt
+                    OrderedAt = order.OrderedAt,
+                    ShipAmount=order.ShipAmount
                 })
                 .ToListAsync()
         };
@@ -1169,6 +1172,7 @@ public class SellerOrderManageViewModel
     public List<SellerOrderListItem> Items { get; set; } = [];
     public int Page { get; set; }
     public int PageSize { get; set; }
+    public int ShipAmount { get; set; }
     public int TotalCount { get; set; }
     public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
 }
@@ -1215,6 +1219,7 @@ public class SellerOrderListItem
     public int OrderId { get; set; }
     public string OrderNo { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
+    public int ShipAmount { get; set; }
     public int OrderAmount { get; set; }
     public string OrderStatus { get; set; } = string.Empty;
     public DateTime OrderedAt { get; set; }
