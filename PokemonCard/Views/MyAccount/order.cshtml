@@ -244,7 +244,7 @@
                                 </span>
 
                                 <span class="fw-bold text-danger">
-                                    NT$ @order.OrderAmount.ToString("N0")
+                                    NT$ @(order.OrderAmount+order.ShipAmount)
                                 </span>
 
                             </div>
