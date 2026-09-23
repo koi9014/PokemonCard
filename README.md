@@ -1,4 +1,4 @@
-![PiCartChu Logo](./docs/assets/logo.png)
+![PiCartChu Logo](PokemonCard/wwwroot/img/logo_.png)
 
 # PiCartChu 日本寶可夢代購平台
 
