@@ -1,6 +1,6 @@
-﻿using PokemonCard. Models;
+﻿using PokemonCard.Models;
 
-namespace PokemonCard. ViewModels
+namespace PokemonCard.ViewModels
 {
     public class MemberCenterViewModel
     {
