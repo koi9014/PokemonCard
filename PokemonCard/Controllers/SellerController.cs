@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PokemonCard.Models;
 using System.Security.Claims;
 using PokemonCard.ViewModels;
+using PokemonCard.ViewModels.Seller;
 
 namespace PokemonCard.Controllers;
 
@@ -163,7 +164,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         var totalCount = await orders.CountAsync();
         page = Math.Clamp(page, 1, Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize)));
 
-        var model = new SellerOrderManageViewModel
+        var model = new SellerOrderManage
         {
             Search = search,
             Status = status,
@@ -219,7 +220,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             })
             .ToListAsync();
 
-        var model = new ToBuyListViewModel
+        var model = new ToBuyList
         {
             Groups = paidItems
                 .GroupBy(item => new
@@ -545,7 +546,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
             })
             .ToListAsync();
 
-        return View(new SellerStoreViewModel
+        return View(new SellerStore
         {
             Seller = seller,
             Products = products,
@@ -800,7 +801,7 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
         const int pageSize = 10;
         var totalCount = await products.CountAsync();
         page = Math.Clamp(page, 1, Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize)));
-        var model = new ProductManageViewModel
+        var model = new ProductManage
         {
             ProductType = productType,
             Status = status,
@@ -1137,118 +1138,4 @@ public class SellerController(PicartchuContext context, IWebHostEnvironment envi
 
         return View(model);
     }
-}
-
-public class ProductManageViewModel
-{
-    public string? ProductType { get; set; }
-    public string? Status { get; set; }
-    public string? Search { get; set; }
-    public List<ProductListItem> Items { get; set; } = [];
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalCount { get; set; }
-    public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
-}
-
-public class ProductListItem
-{
-    public int ProductId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-    public string ProductType { get; set; } = string.Empty;
-    public string ProductStatus { get; set; } = string.Empty;
-    public string? ImageUrl { get; set; }
-    public bool PreSale { get; set; }
-    public int Price { get; set; }
-    public int Stock { get; set; }
-    public int Sales { get; set; }
-    public bool IsScheduled { get; set; }
-}
-
-public class SellerOrderManageViewModel
-{
-    public string? Search { get; set; }
-    public string? Status { get; set; }
-    public List<SellerOrderListItem> Items { get; set; } = [];
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int ShipAmount { get; set; }
-    public int TotalCount { get; set; }
-    public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
-}
-
-public class ToBuyListViewModel
-{
-    public List<ToBuyListGroup> Groups { get; set; } = [];
-    public List<ToBuyOrderProgress> Orders { get; set; } = [];
-    public int TotalQuantity => Groups.Sum(group => group.TotalQuantity);
-    public int TotalOrderCount => Groups.SelectMany(group => group.OrderIds).Distinct().Count();
-}
-
-public class ToBuyListGroup
-{
-    public int ProductId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-    public string? ProductSpec { get; set; }
-    public string? ProductSpec2 { get; set; }
-    public string? ImageUrl { get; set; }
-    public int TotalQuantity { get; set; }
-    public List<int> OrderItemIds { get; set; } = [];
-    public List<ToBuyPurchaseItem> Items { get; set; } = [];
-    public List<int> OrderIds { get; set; } = [];
-    public List<string> OrderNumbers { get; set; } = [];
-}
-
-public class ToBuyOrderProgress
-{
-    public int OrderId { get; set; }
-    public string OrderNo { get; set; } = string.Empty;
-    public DateTime OrderedAt { get; set; }
-    public List<ToBuyPurchaseItem> Items { get; set; } = [];
-}
-
-public class ToBuyPurchaseItem
-{
-    public int OrderItemId { get; set; }
-    public int OrderId { get; set; }
-    public int Quantity { get; set; }
-}
-
-public class SellerOrderListItem
-{
-    public int OrderId { get; set; }
-    public string OrderNo { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
-    public int ShipAmount { get; set; }
-    public int OrderAmount { get; set; }
-    public string OrderStatus { get; set; } = string.Empty;
-    public DateTime OrderedAt { get; set; }
-}
-
-public class SellerStoreViewModel
-{
-    public Seller Seller { get; set; } = null!;
-    public List<Product> Products { get; set; } = [];
-    public List<string> Categories { get; set; } = [];
-    public string? ProductType { get; set; }
-    public int ReviewCount { get; set; }
-    public double AverageRating { get; set; }
-    public List<SellerStoreReviewItem> Reviews { get; set; } = [];
-}
-
-public class SellerStoreReviewItem
-{
-    public string ReviewerName { get; set; } = string.Empty;
-    public int Rating { get; set; }
-    public string? Comment { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-public class StoreSettingInput
-{
-    public bool IsCreate { get; set; }
-    public string? StoreName { get; set; }
-    public string? StoreDescription { get; set; }
-    public IFormFile? Avatar { get; set; }
-    public string? AvatarUrl { get; set; }
 }
